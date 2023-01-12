@@ -1,0 +1,880 @@
+---
+title: "Joining Datasets in R"
+author: "Kaitlyn Elliott"
+date: "12/24/2022"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+ 
+# Reading in Datasets and Libraries 
+```{r}
+library(tidyverse)
+library(lubridate)
+library(sf)
+library(rgdal)
+library(sp)
+library(rgeos)
+library(tidyr)
+
+
+# Delininated BMPs from ArcGIS Pro
+
+tr104_bmp_deliniated <- st_read(file.path("./arcfile/deliniate_tr104.shp"))
+tr104_bmp_deliniated <- st_transform(tr104_bmp_deliniated, 2248)
+tr109_bmp_deliniated <-st_read(file.path("./arcfile/deliniate_tr109.shp"))
+tr109_bmp_deliniated <- st_transform(tr109_bmp_deliniated, 2248)
+tr109_bmp_deliniated$Area_m2 <- "NA"
+cr_bmp_deliniated <- st_read(file.path("./arcfile/deliniate_cr.shp"))
+cr_bmp_deliniated <- st_transform(cr_bmp_deliniated, 2248)
+cb_bmp_deliniated <- st_read(file.path("./arcfile/deliniate_cb.shp"))
+cb_bmp_deliniated <- st_transform(cb_bmp_deliniated, 2248)
+sb_bmp_deliniated <- st_read(file.path("./arcfile/deliniate_sb.shp"))
+sb_bmp_deliniated <- st_transform(sb_bmp_deliniated, 2248)
+
+
+# Landcover Datasets
+
+lulc_2018 <- st_read(file.path("./arcfile/poly_lulc_2018.shp"))
+lulc_2018 <- st_transform(lulc_2018, 2248)
+lulc_2018 <- lulc_2018 %>%
+  mutate(gridcode = gridcode_r)
+lulc_2018 <- st_buffer(lulc_2018, dist = 0)
+
+lulc_2011 <- st_read(file.path("./arcfile/poly_lulc_2011.shp"))
+lulc_2011 <- st_transform(lulc_2011, 2248) 
+
+lulc_2017 <- st_read(file.path("./arcfile/poly_lulc_2017.shp"))
+lulc_2017 <- st_transform(lulc_2017, 2248)
+
+lulc_2015 <- st_read(file.path("./arcfile/poly_lulc_2015.shp"))
+lulc_2015 <- st_transform(lulc_2015, 2248)
+lulc_2015 <- st_buffer(lulc_2015, dist = 0)
+
+lulc_2013 <- st_read(file.path("./arcfile/poly_lulc_2013.shp"))
+lulc_2013 <- st_transform(lulc_2013, 2248)
+lulc_2013 <- lulc_2013 %>%
+  mutate(gridcode = gridcode_r)
+lulc_2013 <- st_buffer(lulc_2013, dist = 0)
+
+lulc_2021 <- st_read(file.path("./arcfile/polylulc2021_shp_polylulc2021.shp"))
+lulc_2021<- st_transform(lulc_2021, 2248)
+
+
+
+# BMP Information as point data
+
+stormwater_tr109 <- st_read(file.path("./arcfile/stormwater_tr109.shp"))
+stormwater_tr109 <- st_transform(stormwater_tr109, 2248) 
+stormwater_tr104 <- st_read(file.path("./arcfile/stormwater_tr104.shp")) 
+stormwater_tr104 <- st_transform(stormwater_tr104, 2248)
+stormwater_tr104 <- stormwater_tr104[,c(1:32,107)]
+stormwater_cr <- st_read(file.path("./arcfile/stormwater_cr.shp")) 
+stormwater_cr <- st_transform(stormwater_cr, 2248)
+stormwater_cb <- st_read(file.path("./arcfile/stormwater_cb.shp")) 
+stormwater_cb <- st_transform(stormwater_cb, 2248)
+stormwater_sb <- st_read(file.path("./arcfile/stormwater_sb.shp")) 
+stormwater_sb <- st_transform(stormwater_sb, 2248)
+
+# Storage information for BMPs
+
+bmp_full <- read.csv("BMP_2020_COMPARE.csv")
+new_stores <- read.csv("full_SEQNO_missing_stores_cf_bmp.csv")
+
+new_stores$Stores_cf <- new_stores$Stores
+new_stores$STRUC_DTAL <- new_stores$STRUC_DTAL.x
+
+bmp_full$Stores_cf <- as.numeric(bmp_full$Stores_cf)
+
+bmp_full <- full_join(bmp_full, new_stores) #need to fix name so that structural detail matches too 
+
+bmp_full <- bmp_full %>%
+  filter(is.na(ASSET)==FALSE)%>%
+  dplyr::select(ASSET, Stores_cf)
+
+# Basin boundaries
+
+tr109 <- st_read(file.path("./tr109_basin.shp")) 
+tr109 <- st_transform(tr109, 2248)
+
+tr104 <- st_read(file.path("./tr104_basin.shp"))
+tr104 <- st_transform(tr104, 2248)
+
+cabin_branch <- st_read(file.path("./cabin_branch_basin.shp"))
+cabin_branch <- st_transform(cabin_branch, 2248)
+
+crystal_rock <- st_read(file.path("./crystal_rock_basin.shp"))
+crystal_rock <- st_transform(crystal_rock, 2248)
+
+crystal_rock <- st_buffer(crystal_rock, dist = 0)
+
+soper_branch <- st_read(file.path("./soper_branch_basin.shp"))
+soper_branch <- st_transform(soper_branch, 2248)
+
+
+```
+
+# Function to join BMP info, deliniation, and landcover information
+
+```{r}
+preparing_datasets <- function(stormwater_dataset, delinate_ds, lulc_ds, year, site_name){
+  
+
+  lulc_ds <- lulc_ds %>%
+    select(Id, gridcode, geometry)
+  
+  site_delinate_info <- cbind(stormwater_dataset, delinate_ds)
+  
+  new_poly <- st_as_sf(as.data.frame(site_delinate_info)[,c(1:36,38)]) # need to find a way to automate this
+  
+  lulc_year_ds <- st_intersection(new_poly, lulc_ds)
+
+  lulc_year_ds <- lulc_year_ds %>%
+    mutate(land_cover_area = st_area(lulc_year_ds[,39]))
+
+  lulc_year_ds_wide <- pivot_wider(as.data.frame(lulc_year_ds), names_from = gridcode.1, values_from = land_cover_area)
+  
+  lulc_summarize <- lulc_year_ds_wide%>%
+  group_by(ASSET) %>%
+  summarize(lulc_70 = ifelse("70" %in% colnames(lulc_year_ds_wide), sum(`70`, na.rm = TRUE), 0),
+            lulc_80 = ifelse("80" %in% colnames(lulc_year_ds_wide), sum(`80`, na.rm = TRUE), 0),
+            lulc_40 = ifelse("40" %in% colnames(lulc_year_ds_wide), sum(`40`, na.rm = TRUE), 0),
+            lulc_30 = ifelse("30" %in% colnames(lulc_year_ds_wide), sum(`30`, na.rm = TRUE), 0),
+            lulc_20 = ifelse("20" %in% colnames(lulc_year_ds_wide), sum(`20`, na.rm = TRUE), 0),
+            lulc_90 = ifelse("90" %in% colnames(lulc_year_ds_wide), sum(`90`, na.rm = TRUE), 0),
+            lulc_10 = ifelse("10" %in% colnames(lulc_year_ds_wide), sum(`10`, na.rm = TRUE), 0),
+            lulc_60 = ifelse("60" %in% colnames(lulc_year_ds_wide), sum(`60`, na.rm = TRUE), 0),
+            lulc_50 = ifelse("50" %in% colnames(lulc_year_ds_wide), sum(`50`, na.rm = TRUE), 0),
+            lulc_0 = ifelse("0" %in% colnames(lulc_year_ds_wide), sum(`0`, na.rm = TRUE), 0),
+            lulc_255 = ifelse("255" %in% colnames(lulc_year_ds_wide), sum(`255`, na.rm = TRUE), 0),
+            lulc_127 = ifelse("127" %in% colnames(lulc_year_ds_wide), sum(`127`, na.rm = TRUE), 0)) %>%
+  mutate(year = year, 
+         lulc_70 = (lulc_70+lulc_80+lulc_60+lulc_50), 
+         site = site_name, 
+         lulc_20 = (lulc_20 + lulc_10), 
+         lulc_40 = (lulc_40 + lulc_90),
+         lulc_unknown = (lulc_0 + lulc_255 + lulc_127)) %>%
+    select(-c(lulc_10, lulc_80, lulc_90, lulc_60, lulc_50, lulc_0, lulc_255, lulc_127))%>%
+    ungroup()
+  
+  
+  deliniate_info_full <- as.data.frame(full_join(as.data.frame(site_delinate_info)[1:31], lulc_summarize))
+ 
+  
+  write.csv(deliniate_info_full, file = paste0("deliniate_lulc_info_", site_name,"_", year, ".csv"))
+  
+}
+
+
+```
+
+
+
+# Using function to join datasets for each site and year
+
+```{r}
+
+preparing_datasets(stormwater_cr, cr_bmp_deliniated, lulc_2011, "2011", "cr")
+preparing_datasets(stormwater_cr, cr_bmp_deliniated, lulc_2013, "2013", "cr")
+preparing_datasets(stormwater_cr, cr_bmp_deliniated, lulc_2015, "2015", "cr")
+preparing_datasets(stormwater_cr, cr_bmp_deliniated, lulc_2017, "2017", "cr")
+preparing_datasets(stormwater_cr, cr_bmp_deliniated, lulc_2018, "2018", "cr")
+preparing_datasets(stormwater_cr, cr_bmp_deliniated, lulc_2021, "2021", "cr")
+
+
+preparing_datasets(stormwater_cb, cb_bmp_deliniated, lulc_2011, "2011", "cb")
+preparing_datasets(stormwater_cb, cb_bmp_deliniated, lulc_2013, "2013", "cb")
+preparing_datasets(stormwater_cb, cb_bmp_deliniated, lulc_2015, "2015", "cb")
+preparing_datasets(stormwater_cb, cb_bmp_deliniated, lulc_2017, "2017", "cb")
+preparing_datasets(stormwater_cb, cb_bmp_deliniated, lulc_2018, "2018", "cb")
+preparing_datasets(stormwater_cb, cb_bmp_deliniated, lulc_2021, "2021", "cb")
+
+
+preparing_datasets(stormwater_sb, sb_bmp_deliniated, lulc_2011, "2011", "sb")
+preparing_datasets(stormwater_sb, sb_bmp_deliniated, lulc_2013, "2013", "sb")
+preparing_datasets(stormwater_sb, sb_bmp_deliniated, lulc_2015, "2015", "sb")
+preparing_datasets(stormwater_sb, sb_bmp_deliniated, lulc_2017, "2017", "sb")
+preparing_datasets(stormwater_sb, sb_bmp_deliniated, lulc_2018, "2018", "sb")
+preparing_datasets(stormwater_sb, sb_bmp_deliniated, lulc_2021, "2021", "sb")
+
+
+preparing_datasets(stormwater_tr109, tr109_bmp_deliniated, lulc_2011, "2011", "tr109")
+preparing_datasets(stormwater_tr109, tr109_bmp_deliniated, lulc_2013, "2013", "tr109")
+preparing_datasets(stormwater_tr109, tr109_bmp_deliniated, lulc_2015, "2015", "tr109")
+preparing_datasets(stormwater_tr109, tr109_bmp_deliniated, lulc_2017, "2017", "tr109")
+preparing_datasets(stormwater_tr109, tr109_bmp_deliniated, lulc_2018, "2018", "tr109")
+preparing_datasets(stormwater_tr109, tr109_bmp_deliniated, lulc_2021, "2021", "tr109")
+
+
+preparing_datasets(stormwater_tr104, tr104_bmp_deliniated, lulc_2011, "2011", "tr104")
+preparing_datasets(stormwater_tr104, tr104_bmp_deliniated, lulc_2013, "2013", "tr104")
+preparing_datasets(stormwater_tr104, tr104_bmp_deliniated, lulc_2015, "2015", "tr104")
+preparing_datasets(stormwater_tr104, tr104_bmp_deliniated, lulc_2017, "2017", "tr104")
+preparing_datasets(stormwater_tr104, tr104_bmp_deliniated, lulc_2018, "2018", "tr104")
+preparing_datasets(stormwater_tr104, tr104_bmp_deliniated, lulc_2021, "2021", "tr104")
+
+
+```
+
+# LULC Basin Wide
+
+```{r}
+
+lulc_2011_tr104 <- st_intersection(lulc_2011, tr104) %>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr104", year = "2011")
+lulc_2013_tr104 <- st_intersection(lulc_2013, tr104)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr104", year = "2013")
+lulc_2015_tr104 <- st_intersection(lulc_2015, tr104)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr104", year = "2015")
+lulc_2017_tr104 <- st_intersection(lulc_2017, tr104)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr104", year = "2017")
+lulc_2018_tr104 <- st_intersection(lulc_2018, tr104)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr104", year = "2018")
+lulc_2021_tr104 <- st_intersection(lulc_2021, tr104)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr104", year = "2021")
+
+lulc_tr104_full <- rbind(lulc_2011_tr104, lulc_2013_tr104, lulc_2015_tr104, lulc_2017_tr104, lulc_2018_tr104, lulc_2021_tr104)
+
+lulc_tr104_full <- lulc_tr104_full %>%
+  mutate(area = st_area(geometry))
+lulc_tr104_full <- as.data.frame(lulc_tr104_full) %>%
+  select(area, site_name, year, gridcode) %>%
+  group_by(site_name, year, gridcode) %>%
+  summarize(total_area = sum(area))
+
+
+lulc_2011_tr109 <- st_intersection(lulc_2011, tr109) %>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr109", year = "2011")
+lulc_2013_tr109 <- st_intersection(lulc_2013, tr109)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr109", year = "2013")
+lulc_2015_tr109 <- st_intersection(lulc_2015, tr109)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr109", year = "2015")
+lulc_2017_tr109 <- st_intersection(lulc_2017, tr109)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr109", year = "2017")
+lulc_2018_tr109 <- st_intersection(lulc_2018, tr109)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr109", year = "2018")
+lulc_2021_tr109 <- st_intersection(lulc_2021, tr109)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "tr109", year = "2021")
+
+lulc_tr109_full <- rbind(lulc_2011_tr109, lulc_2013_tr109, lulc_2015_tr109, lulc_2017_tr109, lulc_2018_tr109, lulc_2021_tr109)
+
+lulc_tr109_full <- lulc_tr109_full %>%
+  mutate(area = st_area(geometry))
+lulc_tr109_full <- as.data.frame(lulc_tr109_full) %>%
+  select(area, site_name, year, gridcode) %>%
+  group_by(site_name, year, gridcode) %>%
+  summarize(total_area = sum(area))
+
+
+
+lulc_2011_cb <- st_intersection(lulc_2011, cabin_branch) %>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cb", year = "2011")
+lulc_2013_cb <- st_intersection(lulc_2013, cabin_branch)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cb", year = "2013")
+lulc_2015_cb <- st_intersection(lulc_2015, cabin_branch)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cb", year = "2015")
+lulc_2017_cb <- st_intersection(lulc_2017, cabin_branch)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cb", year = "2017")
+lulc_2018_cb <- st_intersection(lulc_2018, cabin_branch)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cb", year = "2018")
+lulc_2021_cb <- st_intersection(lulc_2021, cabin_branch)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cb", year = "2021")
+
+lulc_cb_full <- rbind(lulc_2011_cb, lulc_2013_cb, lulc_2015_cb, lulc_2017_cb, lulc_2018_cb, lulc_2021_cb)
+
+lulc_cb_full <- lulc_cb_full %>%
+  mutate(area = st_area(geometry))
+lulc_cb_full <- as.data.frame(lulc_cb_full) %>%
+  select(area, site_name, year, gridcode) %>%
+  group_by(site_name, year, gridcode) %>%
+  summarize(total_area = sum(area))
+
+
+lulc_2011_cr <- st_intersection(lulc_2011, crystal_rock) %>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cr", year = "2011")
+lulc_2013_cr <- st_intersection(lulc_2013, crystal_rock)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cr", year = "2013")
+lulc_2015_cr <- st_intersection(lulc_2015, crystal_rock)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cr", year = "2015")
+lulc_2017_cr <- st_intersection(lulc_2017, crystal_rock)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cr", year = "2017")
+lulc_2018_cr <- st_intersection(lulc_2018, crystal_rock)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cr", year = "2018")
+lulc_2021_cr <- st_intersection(lulc_2021, crystal_rock)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "cr", year = "2021")
+
+lulc_cr_full <- rbind(lulc_2011_cr, lulc_2013_cr, lulc_2015_cr, lulc_2017_cr, lulc_2018_cr, lulc_2021_cr)
+
+lulc_cr_full <- lulc_cr_full %>%
+  mutate(area = st_area(geometry))
+lulc_cr_full <- as.data.frame(lulc_cr_full) %>%
+  select(area, site_name, year, gridcode) %>%
+  group_by(site_name, year, gridcode) %>%
+  summarize(total_area = sum(area))
+
+
+lulc_2011_sb <- st_intersection(lulc_2011, soper_branch) %>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "sb", year = "2011")
+lulc_2013_sb <- st_intersection(lulc_2013, soper_branch)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "sb", year = "2013")
+lulc_2015_sb <- st_intersection(lulc_2015, soper_branch)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "sb", year = "2015")
+lulc_2017_sb <- st_intersection(lulc_2017, soper_branch)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "sb", year = "2017")
+lulc_2018_sb <- st_intersection(lulc_2018, soper_branch)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "sb", year = "2018")
+lulc_2021_sb <- st_intersection(lulc_2021, soper_branch)%>%
+  select(Id, gridcode, geometry)%>%
+  mutate(site_name = "sb", year = "2021")
+
+lulc_sb_full <- rbind(lulc_2011_sb, lulc_2013_sb, lulc_2015_sb, lulc_2017_sb, lulc_2018_sb, lulc_2021_sb)
+
+lulc_sb_full <- lulc_sb_full %>%
+  mutate(area = st_area(geometry))
+lulc_sb_full <- as.data.frame(lulc_sb_full) %>%
+  select(area, site_name, year, gridcode) %>%
+  group_by(site_name, year, gridcode) %>%
+  summarize(total_area = sum(area))
+
+lulc_all_basins <- rbind(lulc_sb_full, lulc_cr_full, lulc_cb_full, lulc_tr104_full, lulc_tr109_full)
+
+lulc_all_basins_edit <- lulc_all_basins %>%
+  group_by(site_name, year)%>%
+  mutate(area_whole_basin = sum(total_area, na.rm = T))%>%
+  mutate(percent_lulc = as.numeric((total_area/area_whole_basin)*100), 
+         year = as.numeric(year), gridcode = as.factor(gridcode))%>%
+  mutate(updated_gridcode = case_when(gridcode == "20"~ "20",
+                                      gridcode == "10"~ "20",
+                                      gridcode == "30"~ "30", 
+                                      gridcode == "40"~ "40", 
+                                      gridcode == "90"~ "40",
+                                      gridcode == "70"~ "70",
+                                      gridcode == "80"~ "70",
+                                      gridcode == "60"~ "70",
+                                      gridcode == "50"~ "70",
+                                      gridcode == "0"~ "unknown",
+                                      gridcode == "225"~ "unknown",
+                                      gridcode == "127"~ "unknown"))
+
+lulc_all_basins_final <- lulc_all_basins_edit %>%
+  group_by(year, site_name, updated_gridcode)%>%
+  summarize(total_area = sum(total_area)) %>%
+  ungroup()%>%
+  group_by(site_name, year)%>%
+  mutate(area_whole_basin = sum(total_area, na.rm = T))%>%
+  mutate(percent_lulc = as.numeric((total_area/area_whole_basin)*100))
+
+write.csv(lulc_all_basins_final, file = "lulc_for_full_basins.csv")
+
+
+
+```
+
+# TR-109 Yearly Summary
+
+```{r}
+deliniate_lulc_info_tr109_2011 <- read_csv("deliniate_lulc_info_tr109_2011.csv")
+deliniate_lulc_info_tr109_2013 <- read_csv("deliniate_lulc_info_tr109_2013.csv")
+deliniate_lulc_info_tr109_2015 <- read_csv("deliniate_lulc_info_tr109_2015.csv")
+deliniate_lulc_info_tr109_2017 <- read_csv("deliniate_lulc_info_tr109_2017.csv")
+deliniate_lulc_info_tr109_2018 <- read_csv("deliniate_lulc_info_tr109_2018.csv")
+deliniate_lulc_info_tr109_2021 <- read_csv("deliniate_lulc_info_tr109_2021.csv")
+
+tr109_full_ds <- rbind(deliniate_lulc_info_tr109_2011, deliniate_lulc_info_tr109_2013, deliniate_lulc_info_tr109_2015, deliniate_lulc_info_tr109_2017, deliniate_lulc_info_tr109_2018, deliniate_lulc_info_tr109_2021)
+
+tr109_full_ds_stores <- left_join(tr109_full_ds, bmp_full)
+
+
+tr109_full_ds_stores <- tr109_full_ds_stores %>%
+  mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))
+  
+tr109_full_ds_stores_2018 <- tr109_full_ds_stores %>%
+  filter(FINAL_DATE < "2019-01-01" & year == "2018") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+tr109_full_ds_stores_2011 <- tr109_full_ds_stores %>%
+  filter(FINAL_DATE < "2012-01-01" & year == "2011") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+tr109_full_ds_stores_2013 <- tr109_full_ds_stores %>%
+  filter(FINAL_DATE < "2014-01-01" & year == "2013") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+tr109_full_ds_stores_2015 <- tr109_full_ds_stores %>%
+  filter(FINAL_DATE < "2016-01-01" & year == "2015") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+tr109_full_ds_stores_2017 <- tr109_full_ds_stores %>%
+  filter(FINAL_DATE < "2018-01-01" & year == "2017") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+tr109_full_ds_stores_2021 <- tr109_full_ds_stores %>%
+  filter(FINAL_DATE < "2022-01-01" & year == "2021") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+stores_lulc_tr109 <- rbind(tr109_full_ds_stores_2021, tr109_full_ds_stores_2018, tr109_full_ds_stores_2017, tr109_full_ds_stores_2015, tr109_full_ds_stores_2013, tr109_full_ds_stores_2011) # add total area drained and the percent of each landcover relative to the whole watershed 
+```
+
+# TR-104 Yearly Summary
+
+```{r}
+deliniate_lulc_info_tr104_2011 <- read_csv("deliniate_lulc_info_tr104_2011.csv")
+deliniate_lulc_info_tr104_2013 <- read_csv("deliniate_lulc_info_tr104_2013.csv")
+deliniate_lulc_info_tr104_2015 <- read_csv("deliniate_lulc_info_tr104_2015.csv")
+deliniate_lulc_info_tr104_2017 <- read_csv("deliniate_lulc_info_tr104_2017.csv")
+deliniate_lulc_info_tr104_2018 <- read_csv("deliniate_lulc_info_tr104_2018.csv")
+deliniate_lulc_info_tr104_2021 <- read_csv("deliniate_lulc_info_tr104_2021.csv")
+
+tr104_full_ds <- rbind(deliniate_lulc_info_tr104_2011, deliniate_lulc_info_tr104_2013, deliniate_lulc_info_tr104_2015, deliniate_lulc_info_tr104_2017, deliniate_lulc_info_tr104_2018, deliniate_lulc_info_tr104_2021)
+
+tr104_full_ds_stores <- left_join(tr104_full_ds, bmp_full)
+
+
+tr104_full_ds_stores <- tr104_full_ds_stores %>%
+  mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))
+  
+tr104_full_ds_stores_2018 <- tr104_full_ds_stores %>%
+  filter(FINAL_DATE < "2019-01-01" & year == "2018") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+tr104_full_ds_stores_2011 <- tr104_full_ds_stores %>%
+  filter(FINAL_DATE < "2012-01-01" & year == "2011") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+tr104_full_ds_stores_2013 <- tr104_full_ds_stores %>%
+  filter(FINAL_DATE < "2014-01-01" & year == "2013") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+tr104_full_ds_stores_2015 <- tr104_full_ds_stores %>%
+  filter(FINAL_DATE < "2016-01-01" & year == "2015") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+tr104_full_ds_stores_2017 <- tr104_full_ds_stores %>%
+  filter(FINAL_DATE < "2018-01-01" & year == "2017") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+tr104_full_ds_stores_2021 <- tr104_full_ds_stores %>%
+  filter(FINAL_DATE < "2022-01-01" & year == "2021") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+stores_lulc_tr104 <- rbind(tr104_full_ds_stores_2021, tr104_full_ds_stores_2018, tr104_full_ds_stores_2017, tr104_full_ds_stores_2015, tr104_full_ds_stores_2013, tr104_full_ds_stores_2011)
+
+```
+
+# CB Yearly Summary
+
+```{r}
+deliniate_lulc_info_cb_2011 <- read_csv("deliniate_lulc_info_cb_2011.csv")
+deliniate_lulc_info_cb_2013 <- read_csv("deliniate_lulc_info_cb_2013.csv")
+deliniate_lulc_info_cb_2015 <- read_csv("deliniate_lulc_info_cb_2015.csv")
+deliniate_lulc_info_cb_2017 <- read_csv("deliniate_lulc_info_cb_2017.csv")
+deliniate_lulc_info_cb_2018 <- read_csv("deliniate_lulc_info_cb_2018.csv")
+deliniate_lulc_info_cb_2021 <- read_csv("deliniate_lulc_info_cb_2021.csv")
+
+cb_full_ds <- rbind(deliniate_lulc_info_cb_2011, deliniate_lulc_info_cb_2013, deliniate_lulc_info_cb_2015, deliniate_lulc_info_cb_2017, deliniate_lulc_info_cb_2018, deliniate_lulc_info_cb_2021)
+
+cb_full_ds_stores <- left_join(cb_full_ds, bmp_full)
+
+
+cb_full_ds_stores <- cb_full_ds_stores %>%
+  mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))
+  
+cb_full_ds_stores_2018 <- cb_full_ds_stores %>%
+  filter(FINAL_DATE < "2019-01-01" & year == "2018") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+cb_full_ds_stores_2011 <- cb_full_ds_stores %>%
+  filter(FINAL_DATE < "2012-01-01" & year == "2011") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+cb_full_ds_stores_2013 <- cb_full_ds_stores %>%
+  filter(FINAL_DATE < "2014-01-01" & year == "2013") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+cb_full_ds_stores_2015 <- cb_full_ds_stores %>%
+  filter(FINAL_DATE < "2016-01-01" & year == "2015") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+cb_full_ds_stores_2017 <- cb_full_ds_stores %>%
+  filter(FINAL_DATE < "2018-01-01" & year == "2017") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+cb_full_ds_stores_2021 <- cb_full_ds_stores %>%
+  filter(FINAL_DATE < "2022-01-01" & year == "2021") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+stores_lulc_cb <- rbind(cb_full_ds_stores_2021, cb_full_ds_stores_2018, cb_full_ds_stores_2017, cb_full_ds_stores_2015, cb_full_ds_stores_2013, cb_full_ds_stores_2011)
+
+```
+
+# CR Yearly Summary
+
+```{r}
+deliniate_lulc_info_cr_2011 <- read_csv("deliniate_lulc_info_cr_2011.csv")
+deliniate_lulc_info_cr_2013 <- read_csv("deliniate_lulc_info_cr_2013.csv")
+deliniate_lulc_info_cr_2015 <- read_csv("deliniate_lulc_info_cr_2015.csv")
+deliniate_lulc_info_cr_2017 <- read_csv("deliniate_lulc_info_cr_2017.csv")
+deliniate_lulc_info_cr_2018 <- read_csv("deliniate_lulc_info_cr_2018.csv")
+deliniate_lulc_info_cr_2021 <- read_csv("deliniate_lulc_info_cr_2021.csv")
+
+cr_full_ds <- rbind(deliniate_lulc_info_cr_2011, deliniate_lulc_info_cr_2013, deliniate_lulc_info_cr_2015, deliniate_lulc_info_cr_2017, deliniate_lulc_info_cr_2018, deliniate_lulc_info_cr_2021)
+
+cr_full_ds_stores <- left_join(cr_full_ds, bmp_full)
+
+
+cr_full_ds_stores <- cr_full_ds_stores %>%
+  mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))
+  
+cr_full_ds_stores_2018 <- cr_full_ds_stores %>%
+  filter(FINAL_DATE < "2019-01-01" & year == "2018") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+cr_full_ds_stores_2011 <- cr_full_ds_stores %>%
+  filter(FINAL_DATE < "2012-01-01" & year == "2011") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+cr_full_ds_stores_2013 <- cr_full_ds_stores %>%
+  filter(FINAL_DATE < "2014-01-01" & year == "2013") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+cr_full_ds_stores_2015 <- cr_full_ds_stores %>%
+  filter(FINAL_DATE < "2016-01-01" & year == "2015") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+cr_full_ds_stores_2017 <- cr_full_ds_stores %>%
+  filter(FINAL_DATE < "2018-01-01" & year == "2017") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+cr_full_ds_stores_2021 <- cr_full_ds_stores %>%
+  filter(FINAL_DATE < "2022-01-01" & year == "2021") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+stores_lulc_cr <- rbind(cr_full_ds_stores_2021, cr_full_ds_stores_2018, cr_full_ds_stores_2017, cr_full_ds_stores_2015, cr_full_ds_stores_2013, cr_full_ds_stores_2011)
+
+```
+
+# SB Yearly Summary
+
+```{r}
+deliniate_lulc_info_sb_2011 <- read_csv("deliniate_lulc_info_sb_2011.csv")
+deliniate_lulc_info_sb_2013 <- read_csv("deliniate_lulc_info_sb_2013.csv")
+deliniate_lulc_info_sb_2015 <- read_csv("deliniate_lulc_info_sb_2015.csv")
+deliniate_lulc_info_sb_2017 <- read_csv("deliniate_lulc_info_sb_2017.csv")
+deliniate_lulc_info_sb_2018 <- read_csv("deliniate_lulc_info_sb_2018.csv")
+deliniate_lulc_info_sb_2021 <- read_csv("deliniate_lulc_info_sb_2021.csv")
+
+sb_full_ds <- rbind(deliniate_lulc_info_sb_2011, deliniate_lulc_info_sb_2013, deliniate_lulc_info_sb_2015, deliniate_lulc_info_sb_2017, deliniate_lulc_info_sb_2018, deliniate_lulc_info_sb_2021)
+
+sb_full_ds_stores <- left_join(sb_full_ds, bmp_full)
+
+
+sb_full_ds_stores <- sb_full_ds_stores %>%
+  mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))
+  
+sb_full_ds_stores_2018 <- sb_full_ds_stores %>%
+  filter(FINAL_DATE < "2019-01-01" & year == "2018") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+sb_full_ds_stores_2011 <- sb_full_ds_stores %>%
+  filter(FINAL_DATE < "2012-01-01" & year == "2011") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+sb_full_ds_stores_2013 <- sb_full_ds_stores %>%
+  filter(FINAL_DATE < "2014-01-01" & year == "2013") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+sb_full_ds_stores_2015 <- sb_full_ds_stores %>%
+  filter(FINAL_DATE < "2016-01-01" & year == "2015") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+sb_full_ds_stores_2017 <- sb_full_ds_stores %>%
+  filter(FINAL_DATE < "2018-01-01" & year == "2017") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+sb_full_ds_stores_2021 <- sb_full_ds_stores %>%
+  filter(FINAL_DATE < "2022-01-01" & year == "2021") %>%
+  group_by(year, site) %>%
+  summarize(
+            lulc_70 = sum(lulc_70, na.rm = TRUE),
+            lulc_40 = sum(lulc_40, na.rm = TRUE),
+            lulc_30 = sum(lulc_30, na.rm = TRUE),
+            lulc_20 = sum(lulc_20, na.rm = TRUE))
+
+stores_lulc_sb <- rbind(sb_full_ds_stores_2021, sb_full_ds_stores_2018, sb_full_ds_stores_2017, sb_full_ds_stores_2015, sb_full_ds_stores_2013, sb_full_ds_stores_2011)
+
+```
+
+# Creating one dataset for analysis 
+
+```{r}
+
+land_use_storage_summarized <- rbind(stores_lulc_cb, stores_lulc_cr, stores_lulc_sb, stores_lulc_tr104, stores_lulc_tr109)
+
+write.csv(land_use_storage_summarized, file = "land_use_storage_summary_by_site_year.csv")
+
+
+```
+
+
+# Yearly Storage Dataset (more data points without lulc restrictions)
+
+```{r}
+
+
+stores_by_year <- function(site_ds, Site){
+  
+  full_storage <- tibble()
+  
+    list_year <- c("2007-01-01", "2008-01-01","2009-01-01","2010-01-01","2011-01-01","2012-01-01","2013-01-01","2014-01-01","2015-01-01","2016-01-01","2017-01-01","2018-01-01","2019-01-01","2020-01-01","2021-01-01")
+    
+    just_year <- year(list_year)-1
+  
+  for (i in 1:length(list_year)) {
+
+    
+    site_ds_yearly <- site_ds %>%
+      filter(FINAL_DATE < list_year[i]) %>%
+      summarize(total_storage = sum(as.numeric(Stores_cf), na.rm = TRUE)) %>%
+      mutate(year = just_year[i], Site = Site)
+      
+      full_storage <- rbind(full_storage, site_ds_yearly)
+    
+  }
+    
+    write.csv(full_storage, file = paste0("./full_storage", Site, ".csv"))
+  
+}
+
+
+stores_by_year(site_ds = tr109_full_ds_stores, Site = "TR109")
+stores_by_year(site_ds = tr104_full_ds_stores, Site = "TR104")
+stores_by_year(site_ds = cb_full_ds_stores, Site = "CB")
+stores_by_year(site_ds = cr_full_ds_stores, Site = "CR")
+stores_by_year(site_ds = sb_full_ds_stores, Site = "SB")
+
+
+full_storage_tr109 <- read.csv("full_storageTR109.csv")
+full_storage_tr104 <- read.csv("full_storageTR104.csv")
+full_storage_cb <- read.csv("full_storageCB.csv")
+full_storage_cr <- read.csv("full_storageCR.csv")
+full_storage_sb <- read.csv("full_storageSB.csv")
+
+```
+
+
+# Variables for context for deliniated lulc
+
+```{r}
+
+sem_vars_and_precip <- read.csv("./SEM_PRECIP_2022.CSV")
+
+land_use_storage_summarized <- read.csv("./land_use_storage_summary_by_site_year.csv")
+
+lulc_all_basins <- read.csv("./lulc_for_full_basins.csv")
+
+land_use_storage_summarized <- land_use_storage_summarized[,2:8] %>%
+  mutate(Site = toupper(site), Year = year)
+
+lulc_all_basins <- lulc_all_basins[,2:7]
+
+lulc_all_basins_wider <- pivot_wider(lulc_all_basins, names_from = updated_gridcode, values_from = c(total_area, percent_lulc)) %>%
+  mutate(Site = toupper(site_name))%>%
+  dplyr::select(-c(total_area_unknown, total_area_NA, percent_lulc_20,percent_lulc_30,percent_lulc_40,percent_lulc_70,percent_lulc_unknown, percent_lulc_NA))
+
+
+sem_lulc_storage <- left_join(sem_vars_and_precip, land_use_storage_summarized)
+
+
+sem_lulc_storage_more_info <- left_join(sem_lulc_storage, lulc_all_basins_wider)
+
+sem_lulc_storage_more_info <- sem_lulc_storage_more_info %>%
+  mutate(percent_of_all_70 = (lulc_70/total_area_70)*100, 
+         percent_of_all_30 = (lulc_30/total_area_30)*100,
+         percent_of_all_40 = (lulc_40/total_area_40)*100,
+         percent_of_all_20 = (lulc_20/total_area_20)*100,
+         percent_70_whole_basin = (lulc_70/area_whole_basin)*100,
+         percent_40_whole_basin = (lulc_40/area_whole_basin)*100,
+         percent_30_whole_basin = (lulc_30/area_whole_basin)*100,
+         percent_20_whole_basin = (lulc_20/area_whole_basin)*100,
+         PH = as.numeric(PH),
+         CONDUCT = as.numeric(CONDUCT),
+         AIRTEMP = as.numeric(AIRTEMP),
+         H2OTEMP_C = as.numeric(H2OTEMP_C),
+         DISOXY = as.numeric(DISOXY))
+
+
+```
