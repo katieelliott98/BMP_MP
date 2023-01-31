@@ -1,0 +1,84 @@
+---
+title: "testing_assumptions"
+author: "Kaitlyn Elliott"
+date: "2023-01-12"
+output: pdf_document
+---
+
+# Library
+
+```{r}
+library(ggplot2)
+library(plotly)
+library(climateR)
+library(tidyverse)
+library(dataRetrieval)
+
+site_info <- data.frame(site = c("Dallas", "Seattle", "Clarksburg", "Los Angeles"), Long = c(-96.80889100, -122.3351600, -77.2794200, -118.24368400), Lat = c(32.7791600, 47.6080100, 39.2387100, 34.05223400))
+
+sf_use_s2(FALSE)
+pts <- st_as_sf(site_info, coords = c("Long", "Lat"), crs = 4326)
+
+```
+
+# Testing PET
+
+```{r}
+
+
+date_seq <-as.character(seq(from = as.Date("2015-01-01"), to = as.Date("2020-12-31"), by = "month"))
+
+full_pet <- tibble()
+
+
+for(i in 1:length(date_seq)){
+sites_stack_pet <- getCABCM(AOI = pts, 
+                           param = "pet", 
+                           startDate = date_seq[i], 
+                           endDate   = date_seq[i])
+
+closeAllConnections()
+
+
+sites_wide = extract_sites(sites_stack_pet, pts, "site")
+pet = tidyr::pivot_longer(sites_wide$cabcm_CCSM4_pet, -date)
+pet$value<-as.numeric(pet$value)
+
+full_pet <- rbind(full_pet, pet)
+}
+
+write.csv(full_pet, file = "./full_pet.csv")
+
+
+max_clarksburg_pet <- 144.2/25.4 # Actual Evap in inches
+
+max_dallas_pet<- 152.4/25.4 # Actual Evap in inches
+
+
+```
+
+# Testing runoff to responce time
+
+```{r}
+
+precip_clarksburg <- readNWISuv(siteNumbers = "391407077174001",
+             parameterCd = "00045",
+             startDate = "2022-01-01",
+             endDate = "2022-12-02")
+
+closeAllConnections()
+
+
+discharge_clarksburg <- readNWISuv(siteNumbers = "01644388",
+             parameterCd = "00060",
+             startDate = "2022-11-25",
+             endDate = "2022-12-02")
+
+
+
+ggplotly(ggplot() + geom_line(data = precip_clarksburg, aes(x = dateTime, y = X_00045_00000)) + geom_line(data = discharge_clarksburg, aes(x = dateTime, y = X_00060_00000)))
+
+
+```
+
+If you can say drainage area to peak flow is proportional then for an area of 3.53 miles^2 taking 6 hours a 0.023088523 miles^2 (one of the largest BMP drainage areas) would take around 2 minutes. 

@@ -1,0 +1,188 @@
+---
+title: "Plots"
+author: "Kaitlyn Elliott"
+date: "2023-01-12"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+# Library and Reading in Datasets
+
+```{r}
+
+library(tidyverse)
+library(ggplot2)
+library(corrplot)
+
+full_storage_cb <- read.csv("./Output_for_Files/full_storageCB.csv")
+full_storage_sb <- read.csv("./Output_for_Files/full_storageSB.csv")
+full_storage_cr <- read.csv("./Output_for_Files/full_storageCR.csv")
+full_storage_tr104 <- read.csv("./Output_for_Files/full_storageTR104.csv")
+full_storage_tr109 <- read.csv("./Output_for_Files/full_storageTR109.csv")
+
+sem_vars_and_precip <- read.csv("./Input_Files/SEM_PRECIP_2022.CSV")
+
+land_use_storage_summarized <- read.csv("./Output_for_Files/land_use_storage_summary_by_site_year.csv")
+
+sem_lulc_storage_more_info <- read.csv("./Output_for_Files/sem_lulc_storage_more_info.csv")
+
+```
+
+# Plots of storage
+
+```{r}
+
+stores_all_site <- rbind(full_storage_cb, full_storage_cr, full_storage_sb, full_storage_tr104, full_storage_tr109)
+
+stores_all_site <- stores_all_site %>%
+  dplyr::select(-c(X))%>%
+  mutate(Year = year)
+
+stores_sem_precip <- full_join(sem_vars_and_precip, stores_all_site) 
+
+
+ggplot(stores_sem_precip%>%filter(total_storage>0), aes(x = total_storage, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm", se = FALSE) 
+
+ggplot(stores_sem_precip%>%filter(total_storage>0), aes(x = total_storage, y = taxa.rich, color = Site)) + geom_point() + geom_smooth(method = "lm", se = FALSE)
+
+ggplot(stores_sem_precip%>%filter(total_storage>0), aes(x = total_storage, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm", se = FALSE)
+
+test_lm <- lm(IBI ~ total_storage, stores_sem_precip%>%filter(total_storage>0))
+summary(test_lm)
+
+test_lm <- lm(taxa.rich ~ total_storage, stores_sem_precip%>%filter(total_storage>0))
+summary(test_lm)
+
+test_lm <- lm(per.ept ~ total_storage, stores_sem_precip%>%filter(total_storage>0))
+summary(test_lm)
+
+
+```
+
+
+```{r}
+
+stores_sem_precip_filtered <- stores_sem_precip %>%
+  dplyr::select(-c(DISOXY, PH, CONDUCT, AIRTEMP, H2OTEMP_C, X, X.1))
+
+full_ds_variables_sem <- full_join(sem_lulc_storage_more_info, stores_sem_precip_filtered)
+
+
+ggplot(full_ds_variables_sem %>% filter(Site %in% c("TR104", "TR109"))) + geom_point(aes(x = Year, y = lulc_20, color = Site)) 
+
+ggplot(full_ds_variables_sem %>% filter(Site %in% c("TR104", "TR109"))) + geom_point(aes(x = Year, y = lulc_30, color = Site)) 
+
+
+options(scipen=999)
+
+ggplot(stores_sem_precip_filtered%>% filter(Site %in% c("TR104", "TR109")))+ geom_point(aes(x = year, y = total_storage, color = Site)) + labs(x = "", y = "Storage Provided by BMPs (ft^3)")
+
+# per.ept
+
+ggplot(full_ds_variables_sem%>%filter(percent_of_all_20>0), aes(x = percent_of_all_20, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F) + labs(x = "% Impervious Entering BMPs", y = "Percent EPT")
+
+ggplot(full_ds_variables_sem%>%filter(percent_of_all_20>0), aes(x = lulc_20, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F) + labs(x = "Area Impervious Entering BMPs (ft^2)", y = "Percent EPT")
+
+ggplot(full_ds_variables_sem%>%filter(percent_of_all_20>0), aes(x = percent_of_all_30, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F)+ labs(x = "% Barren Entering BMPs", y = "Percent EPT")
+
+ggplot(full_ds_variables_sem%>%filter(percent_of_all_20>0), aes(x = lulc_30, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F)+ labs(x = "Area Barren Entering BMPs (ft^2)", y = "Percent EPT")
+
+# IBI
+
+ggplot(full_ds_variables_sem, aes(x = percent_of_all_20, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F)+ labs(x = "% Impervious Entering BMPs", y = "IBI")
+
+ggplot(full_ds_variables_sem, aes(x = lulc_20, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F)+ labs(x = "Area Impervious Entering BMPs (ft^2)", y = "IBI")
+
+ggplot(full_ds_variables_sem, aes(x = percent_of_all_30, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F)+ labs(x = "% Barren Entering BMPs", y = "IBI")
+
+ggplot(full_ds_variables_sem, aes(x = lulc_30, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F)+ labs(x = "Area Barren Entering BMPs (ft^2)", y = "IBI")
+
+# taxa.rich
+
+ggplot(full_ds_variables_sem, aes(x = percent_of_all_20, y = taxa.rich, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F)+ labs(x = "% Impervious Entering BMPs", y = "Taxa Richness")
+
+ggplot(full_ds_variables_sem, aes(x = lulc_20, y = taxa.rich, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F)+ labs(x = "Area Impervious Entering BMPs (ft^2)", y = "Taxa Richness")
+
+ggplot(full_ds_variables_sem, aes(x = percent_of_all_30, y = taxa.rich, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F)+ labs(x = "% Barren Entering BMPs", y = "Taxa Richness")
+
+ggplot(full_ds_variables_sem, aes(x = lulc_30, y = taxa.rich, color = Site)) + geom_point() + geom_smooth(method = "lm", se = F)+ labs(x = "Area Barren Entering BMPs (ft^2)", y = "Taxa Richness")
+
+
+#linear models
+
+
+
+test_lm <- lm(IBI ~ total_storage + percent_of_all_30 + percent_of_all_20, full_ds_variables_sem)
+summary(test_lm)
+test_lm <- lm(taxa.rich ~ total_storage + percent_of_all_30 + percent_of_all_20, full_ds_variables_sem)
+summary(test_lm)
+test_lm <- lm(per.ept ~ total_storage + percent_of_all_30 + percent_of_all_20, full_ds_variables_sem)
+summary(test_lm)
+test_lm <- lm(Flash ~ total_storage + percent_of_all_30 + percent_of_all_20, full_ds_variables_sem)
+summary(test_lm)
+
+```
+
+# Biotic Variable Plots
+
+```{r}
+
+ggplot(sem_vars_and_precip, aes(x = IBI)) + geom_histogram() # + facet_wrap("Site")
+
+ggplot(sem_vars_and_precip, aes(x = taxa.rich)) + geom_histogram() # + facet_wrap("Site")
+
+ggplot(sem_vars_and_precip, aes(x = per.ept)) + geom_histogram() # + facet_wrap("Site")
+
+
+# Distributions are not the same. The three different biotic variables do not tell the same information
+# per.ept <- normal distribution
+# taxa.rich <- positive skew
+# IBI had a bimodal distribution
+
+p1 <- ggplot(sem_vars_and_precip%>%filter(Site == "TR104"), aes(x = Year)) + geom_line(aes(y = IBI), color = "green")+ geom_line(aes(y = per.ept), color = "purple")+ geom_line(aes(y = taxa.rich), color = "blue") + geom_vline(aes(xintercept = 2003), linetype = "dotdash")+ geom_vline(aes(xintercept = 2012), linetype = "dotdash") + labs(title = "TR104", y = "", x="")
+
+p2 <- ggplot(sem_vars_and_precip%>%filter(Site == "TR109"), aes(x = Year)) + geom_line(aes(y = IBI), color = "green")+ geom_line(aes(y = per.ept), color = "purple")+ geom_line(aes(y = taxa.rich), color = "blue")+ geom_vline(aes(xintercept = 2008), linetype = "dotdash")+ geom_vline(aes(xintercept = 2016), linetype = "dotdash") + labs(title = "TR109", y = "", x="")
+
+plot_grid(p1, p2, ncol = 2)
+
+```
+
+# Correlation Plots
+
+```{r}
+
+tr109_cor <- sem_lulc_storage_more_info %>%
+  filter(site == "tr109")%>%
+  select(-c(site, Site, X, rainfall_days, rainfall_over1inch,  av_consec_rainday, CONDUCT, DISOXY, PH,AIRTEMP,percentile_90th, MON_TYPE, Month, MonitoringTime, site_name,ml18, ml13, ml14, ml15, ml16, ml17, X._SAT))
+
+
+cor_tr109 <- cor(tr109_cor,method = "spearman", use="pairwise.complete.obs")
+
+corrplot(cor_tr109,  method = "color", type = "lower", tl.cex = 0.5)
+mtext("Site TR109", at=2.0, line=-2.5, cex=1.5)
+
+whole_ds <- sem_lulc_storage_more_info %>%
+ select(-c(site, Site, X, rainfall_days, rainfall_over1inch,  av_consec_rainday, CONDUCT, DISOXY, PH,AIRTEMP,percentile_90th, MON_TYPE, Month, MonitoringTime, site_name,ml18, ml13, ml14, ml15, ml16, ml17, X._SAT))
+
+cor_whole_ds <- cor(whole_ds, method = "spearman", use="pairwise.complete.obs")
+
+corrplot(cor_whole_ds, method = "color", type = "lower")
+
+tr104_cor <- sem_lulc_storage_more_info %>%
+  filter(site == "tr104")%>%
+  select(-c(site, Site, X, rainfall_days, rainfall_over1inch,  av_consec_rainday, CONDUCT, DISOXY, PH,AIRTEMP,percentile_90th, MON_TYPE, Month, MonitoringTime, site_name,ml18, ml13, ml14, ml15, ml16, ml17, X._SAT))
+
+cor_tr104 <- cor(tr104_cor,method = "spearman", use="pairwise.complete.obs")
+
+corrplot(cor_tr104,  method = "color", type = "lower", tl.cex = 0.5)
+mtext("Site TR104", at=2.0, line=-2.5, cex=1.5)
+
+difference_cor <- as.data.frame(cor_tr109) - as.data.frame(cor_tr104)
+
+difference_cor <- rownames_to_column(difference_cor, "variables")
+
+difference_cor_melt <- melt(difference_cor)
+
+
+```
+
