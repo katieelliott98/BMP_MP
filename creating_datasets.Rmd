@@ -16,6 +16,7 @@ library(rgdal)
 library(sp)
 library(rgeos)
 library(tidyr)
+library(plyr)
 
 
 # Delininated BMPs from ArcGIS Pro
@@ -90,7 +91,7 @@ new_stores$STRUC_DTAL <- new_stores$STRUC_DTAL.x
 
 bmp_full$Stores_cf <- as.numeric(bmp_full$Stores_cf)
 
-bmp_full <- full_join(bmp_full, new_stores) #need to fix name so that structural detail matches too 
+bmp_full <- full_join(bmp_full, new_stores) 
 
 bmp_full <- bmp_full %>%
   filter(is.na(ASSET)==FALSE)%>%
@@ -129,7 +130,7 @@ preparing_datasets <- function(stormwater_dataset, delinate_ds, lulc_ds, year, s
   
   site_delinate_info <- cbind(stormwater_dataset, delinate_ds)
   
-  new_poly <- st_as_sf(as.data.frame(site_delinate_info)[,c(1:36,38)]) # need to find a way to automate this
+  new_poly <- st_as_sf(as.data.frame(site_delinate_info)[,c(1:36,38)]) 
   
   lulc_year_ds <- st_intersection(new_poly, lulc_ds)
 
@@ -534,619 +535,516 @@ write.csv(lulc_all_basins_final, file = "./Output_for_Files/lulc_for_full_basins
 
 ```
 
-# TR-109 Yearly Summary
+
+# TR109 Summaries Yearly
 
 ```{r}
-deliniate_lulc_info_tr109_2010 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2010.csv")
-deliniate_lulc_info_tr109_2011 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2011.csv")
-deliniate_lulc_info_tr109_2012 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2012.csv")
-deliniate_lulc_info_tr109_2013 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2013.csv")
-deliniate_lulc_info_tr109_2014 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2014.csv")
-deliniate_lulc_info_tr109_2015 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2015.csv")
-deliniate_lulc_info_tr109_2016 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2016.csv")
-deliniate_lulc_info_tr109_2017 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2017.csv")
-deliniate_lulc_info_tr109_2018 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2018.csv")
-deliniate_lulc_info_tr109_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2019.csv")
 
-tr109_full_ds <- rbind(deliniate_lulc_info_tr109_2010, deliniate_lulc_info_tr109_2011, deliniate_lulc_info_tr109_2012, deliniate_lulc_info_tr109_2013, deliniate_lulc_info_tr109_2014, deliniate_lulc_info_tr109_2015, deliniate_lulc_info_tr109_2016, deliniate_lulc_info_tr109_2017, deliniate_lulc_info_tr109_2018, deliniate_lulc_info_tr109_2019)
-
-tr109_full_ds_stores <- left_join(tr109_full_ds, bmp_full)
+deliniate_lulc_info_tr109_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2019.csv") 
+deliniate_lulc_info_tr104_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2019.csv") 
+deliniate_lulc_info_cb_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2019.csv") 
+deliniate_lulc_info_cr_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2019.csv") 
+deliniate_lulc_info_sb_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2019.csv") 
 
 
-tr109_full_ds_stores <- tr109_full_ds_stores %>%
-  mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))
+yearly_summary_lulc <- function(site_bmp_deliniated, deliniated_lulc_site_2019, bmp_full_ds, filter_date, lulc_year, site_outline, site_name, year){
+ 
+  site_for_summary_ds <-cbind(site_bmp_deliniated, deliniated_lulc_site_2019)
   
+  site_for_summary_ds <-left_join(site_for_summary_ds, bmp_full_ds, by = 'ASSET')
+  
+  site_for_summary_ds <- site_for_summary_ds %>%
+  dplyr::mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))%>%
+  filter(FINAL_DATE < filter_date )
+  
+  site_for_summary <- st_union(site_for_summary_ds)
+  
+  site_lulc_year_whole <- st_intersection(lulc_year, site_outline)
+  
+  site_lulc_year <- st_difference(site_lulc_year_whole, site_for_summary)
+  
+  site_lulc_year <- st_union(site_lulc_year)
+
+  site_lulc_year <- st_difference(site_lulc_year_whole, site_lulc_year)
+
+  site_lulc_year$area <- st_area(site_lulc_year)
+  
+  site_lulc_year_summary <-as.data.frame(site_lulc_year) %>%
+  group_by(gridcode)%>%
+  dplyr::summarize(lulc_area = sum(area))%>%
+  dplyr::mutate(site = site_name, year = year)%>%
+  dplyr::select(gridcode, lulc_area, site, year)
+
+site_lulc_year_summary <- site_lulc_year_summary %>%
+  dplyr::mutate(storage = sum(site_for_summary_ds$Stores_cf, na.rm = T))
+
+return(site_lulc_year_summary)
+
+write.csv(site_lulc_year_summary, file =paste0( "./Output_for_Files/",site_name, year, "lulcandstorage_yearly_summary.csv"))
+
+}
 
 
-tr109_full_ds_stores_2010 <- tr109_full_ds_stores %>%
-  filter(FINAL_DATE < "2011-01-01" & year == "2010") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+tr109_2010 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = tr109,
+                    site_name = "TR109",
+                    year = "2010")
 
-tr109_full_ds_stores_2011 <- tr109_full_ds_stores %>%
-  filter(FINAL_DATE < "2012-01-01" & year == "2011") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+tr109_2011 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = tr109,
+                    site_name = "TR109",
+                    year = "2011")
 
-tr109_full_ds_stores_2012 <- tr109_full_ds_stores %>%
-  filter(FINAL_DATE < "2013-01-01" & year == "2012") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+tr109_2012 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = tr109,
+                    site_name = "TR109",
+                    year = "2012")
 
-tr109_full_ds_stores_2013 <- tr109_full_ds_stores %>%
-  filter(FINAL_DATE < "2014-01-01" & year == "2013") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+tr109_2013 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = tr109,
+                    site_name = "TR109",
+                    year = "2013")
 
-tr109_full_ds_stores_2014 <- tr109_full_ds_stores %>%
-  filter(FINAL_DATE < "2015-01-01" & year == "2014") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+tr109_2014 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = tr109,
+                    site_name = "TR109",
+                    year = "2014")
 
-tr109_full_ds_stores_2015 <- tr109_full_ds_stores %>%
-  filter(FINAL_DATE < "2016-01-01" & year == "2015") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+tr109_2015 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = tr109,
+                    site_name = "TR109",
+                    year = "2015")
 
-tr109_full_ds_stores_2016 <- tr109_full_ds_stores %>%
-  filter(FINAL_DATE < "2017-01-01" & year == "2016") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+tr109_2016 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = tr109,
+                    site_name = "TR109",
+                    year = "2016")
 
-tr109_full_ds_stores_2017 <- tr109_full_ds_stores %>%
-  filter(FINAL_DATE < "2018-01-01" & year == "2017") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+tr109_2017 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = tr109,
+                    site_name = "TR109",
+                    year = "2017")
 
-tr109_full_ds_stores_2018 <- tr109_full_ds_stores %>%
-  filter(FINAL_DATE < "2019-01-01" & year == "2018") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+tr109_2018 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = tr109,
+                    site_name = "TR109",
+                    year = "2018")
 
-tr109_full_ds_stores_2019 <- tr109_full_ds_stores %>%
-  filter(FINAL_DATE < "2020-01-01" & year == "2019") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+tr109_2019 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = tr109,
+                    site_name = "TR109",
+                    year = "2019")
+
+all_bmp_tr109_lulc_storage__yearly_summaries <- rbind.fill(tr109_2019, tr109_2018, tr109_2017, tr109_2016, tr109_2015, tr109_2014, tr109_2013, tr109_2012, tr109_2011, tr109_2010)
+
+all_bmp_tr109_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_tr109_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+
+```
+# TR-104 Summaries Yearly
+```{r}
+
+
+tr104_2010 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2010")
+
+tr104_2011 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2011")
+
+tr104_2012 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2012")
+
+tr104_2013 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2013")
+
+tr104_2014 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2014")
+
+tr104_2015 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2015")
+
+tr104_2016 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2016")
+
+tr104_2017 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2017")
+
+tr104_2018 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2018")
+
+tr104_2019 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2019")
+
+all_bmp_tr104_lulc_storage__yearly_summaries <- rbind.fill(tr104_2019, tr104_2018, tr104_2017, tr104_2016, tr104_2015, tr104_2014, tr104_2013, tr104_2012, tr104_2011, tr104_2010)
+
+all_bmp_tr104_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_tr104_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+```
+# Cabin Branch Summaries Yearly
+
+```{r}
 
 
 
+cb_2017 <- yearly_summary_lulc(site_bmp_deliniated = cb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = cabin_branch,
+                    site_name = "cb",
+                    year = "2017")
 
-stores_lulc_tr109 <- rbind(tr109_full_ds_stores_2010, tr109_full_ds_stores_2011, tr109_full_ds_stores_2012, tr109_full_ds_stores_2013, tr109_full_ds_stores_2014, tr109_full_ds_stores_2015, tr109_full_ds_stores_2016, tr109_full_ds_stores_2017, tr109_full_ds_stores_2018, tr109_full_ds_stores_2019) 
+cb_2018 <- yearly_summary_lulc(site_bmp_deliniated = cb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = cabin_branch,
+                    site_name = "cb",
+                    year = "2018")
+
+cb_2019 <- yearly_summary_lulc(site_bmp_deliniated = cb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = cabin_branch,
+                    site_name = "cb",
+                    year = "2019")
+
+all_bmp_cb_lulc_storage__yearly_summaries <- rbind.fill(cb_2019, cb_2018, cb_2017)
+
+all_bmp_cb_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_cb_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
 
 ```
 
-# TR-104 Yearly Summary
+# Crystal Rock Summaries Yearly
 
 ```{r}
-deliniate_lulc_info_tr104_2010 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2010.csv")
-deliniate_lulc_info_tr104_2011 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2011.csv")
-deliniate_lulc_info_tr104_2012 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2012.csv")
-deliniate_lulc_info_tr104_2013 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2013.csv")
-deliniate_lulc_info_tr104_2014 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2014.csv")
-deliniate_lulc_info_tr104_2015 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2015.csv")
-deliniate_lulc_info_tr104_2016 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2016.csv")
-deliniate_lulc_info_tr104_2017 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2017.csv")
-deliniate_lulc_info_tr104_2018 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2018.csv")
-deliniate_lulc_info_tr104_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2019.csv")
 
-tr104_full_ds <- rbind(deliniate_lulc_info_tr104_2010, deliniate_lulc_info_tr104_2011, deliniate_lulc_info_tr104_2012, deliniate_lulc_info_tr104_2013, deliniate_lulc_info_tr104_2014, deliniate_lulc_info_tr104_2015, deliniate_lulc_info_tr104_2016, deliniate_lulc_info_tr104_2017, deliniate_lulc_info_tr104_2018, deliniate_lulc_info_tr104_2019)
+cr_2010 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2010")
 
-tr104_full_ds_stores <- left_join(tr104_full_ds, bmp_full)
+cr_2011 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2011")
 
+cr_2012 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2012")
 
-tr104_full_ds_stores <- tr104_full_ds_stores %>%
-  mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))
-  
+cr_2013 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2013")
 
+cr_2014 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2014")
 
-tr104_full_ds_stores_2010 <- tr104_full_ds_stores %>%
-  filter(FINAL_DATE < "2011-01-01" & year == "2010") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+cr_2015 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2015")
 
-tr104_full_ds_stores_2011 <- tr104_full_ds_stores %>%
-  filter(FINAL_DATE < "2012-01-01" & year == "2011") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+cr_2016 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2016")
 
-tr104_full_ds_stores_2012 <- tr104_full_ds_stores %>%
-  filter(FINAL_DATE < "2013-01-01" & year == "2012") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+cr_2017 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2017")
 
-tr104_full_ds_stores_2013 <- tr104_full_ds_stores %>%
-  filter(FINAL_DATE < "2014-01-01" & year == "2013") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+cr_2018 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2018")
 
-tr104_full_ds_stores_2014 <- tr104_full_ds_stores %>%
-  filter(FINAL_DATE < "2015-01-01" & year == "2014") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+cr_2019 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2019")
 
-tr104_full_ds_stores_2015 <- tr104_full_ds_stores %>%
-  filter(FINAL_DATE < "2016-01-01" & year == "2015") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+all_bmp_cr_lulc_storage__yearly_summaries <- rbind.fill(cr_2019, cr_2018, cr_2017, cr_2016, cr_2015, cr_2014, cr_2013, cr_2012, cr_2011, cr_2010)
 
-tr104_full_ds_stores_2016 <- tr104_full_ds_stores %>%
-  filter(FINAL_DATE < "2017-01-01" & year == "2016") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-tr104_full_ds_stores_2017 <- tr104_full_ds_stores %>%
-  filter(FINAL_DATE < "2018-01-01" & year == "2017") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-tr104_full_ds_stores_2018 <- tr104_full_ds_stores %>%
-  filter(FINAL_DATE < "2019-01-01" & year == "2018") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-tr104_full_ds_stores_2019 <- tr104_full_ds_stores %>%
-  filter(FINAL_DATE < "2020-01-01" & year == "2019") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-
-
-
-stores_lulc_tr104 <- rbind(tr104_full_ds_stores_2010, tr104_full_ds_stores_2011, tr104_full_ds_stores_2012, tr104_full_ds_stores_2013, tr104_full_ds_stores_2014, tr104_full_ds_stores_2015, tr104_full_ds_stores_2016, tr104_full_ds_stores_2017, tr104_full_ds_stores_2018, tr104_full_ds_stores_2019) 
+all_bmp_cr_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_cr_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
 
 ```
 
-# CR Yearly Summary
+# Soper Branch Summaries Yearly
 
 ```{r}
-deliniate_lulc_info_cr_2010 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2010.csv")
-deliniate_lulc_info_cr_2011 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2011.csv")
-deliniate_lulc_info_cr_2012 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2012.csv")
-deliniate_lulc_info_cr_2013 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2013.csv")
-deliniate_lulc_info_cr_2014 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2014.csv")
-deliniate_lulc_info_cr_2015 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2015.csv")
-deliniate_lulc_info_cr_2016 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2016.csv")
-deliniate_lulc_info_cr_2017 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2017.csv")
-deliniate_lulc_info_cr_2018 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2018.csv")
-deliniate_lulc_info_cr_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2019.csv")
-
-cr_full_ds <- rbind(deliniate_lulc_info_cr_2010, deliniate_lulc_info_cr_2011, deliniate_lulc_info_cr_2012, deliniate_lulc_info_cr_2013, deliniate_lulc_info_cr_2014, deliniate_lulc_info_cr_2015, deliniate_lulc_info_cr_2016, deliniate_lulc_info_cr_2017, deliniate_lulc_info_cr_2018, deliniate_lulc_info_cr_2019)
-
-cr_full_ds_stores <- left_join(cr_full_ds, bmp_full)
 
 
-cr_full_ds_stores <- cr_full_ds_stores %>%
-  mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))
-  
+sb_2010 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2010")
 
+sb_2011 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2011")
 
-cr_full_ds_stores_2010 <- cr_full_ds_stores %>%
-  filter(FINAL_DATE < "2011-01-01" & year == "2010") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+sb_2012 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2012")
 
-cr_full_ds_stores_2011 <- cr_full_ds_stores %>%
-  filter(FINAL_DATE < "2012-01-01" & year == "2011") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+sb_2013 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2013")
 
-cr_full_ds_stores_2012 <- cr_full_ds_stores %>%
-  filter(FINAL_DATE < "2013-01-01" & year == "2012") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+sb_2014 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2014")
 
-cr_full_ds_stores_2013 <- cr_full_ds_stores %>%
-  filter(FINAL_DATE < "2014-01-01" & year == "2013") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+sb_2015 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2015")
 
-cr_full_ds_stores_2014 <- cr_full_ds_stores %>%
-  filter(FINAL_DATE < "2015-01-01" & year == "2014") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+sb_2016 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2016")
 
-cr_full_ds_stores_2015 <- cr_full_ds_stores %>%
-  filter(FINAL_DATE < "2016-01-01" & year == "2015") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+sb_2017 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2017")
 
-cr_full_ds_stores_2016 <- cr_full_ds_stores %>%
-  filter(FINAL_DATE < "2017-01-01" & year == "2016") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+sb_2018 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2018")
 
-cr_full_ds_stores_2017 <- cr_full_ds_stores %>%
-  filter(FINAL_DATE < "2018-01-01" & year == "2017") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+sb_2019 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    bmp_full_ds = bmp_full,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2019")
 
-cr_full_ds_stores_2018 <- cr_full_ds_stores %>%
-  filter(FINAL_DATE < "2019-01-01" & year == "2018") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+all_bmp_sb_lulc_storage__yearly_summaries <- rbind.fill(sb_2019, sb_2018, sb_2017, sb_2016, sb_2015, sb_2014, sb_2013, sb_2012, sb_2011, sb_2010)
 
-cr_full_ds_stores_2019 <- cr_full_ds_stores %>%
-  filter(FINAL_DATE < "2020-01-01" & year == "2019") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
+all_bmp_sb_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_sb_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
 
-
-
-
-stores_lulc_cr <- rbind(cr_full_ds_stores_2010, cr_full_ds_stores_2011, cr_full_ds_stores_2012, cr_full_ds_stores_2013, cr_full_ds_stores_2014, cr_full_ds_stores_2015, cr_full_ds_stores_2016, cr_full_ds_stores_2017, cr_full_ds_stores_2018, cr_full_ds_stores_2019) 
 
 ```
 
-# SB Yearly Summary
-
 ```{r}
-deliniate_lulc_info_sb_2010 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2010.csv")
-deliniate_lulc_info_sb_2011 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2011.csv")
-deliniate_lulc_info_sb_2012 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2012.csv")
-deliniate_lulc_info_sb_2013 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2013.csv")
-deliniate_lulc_info_sb_2014 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2014.csv")
-deliniate_lulc_info_sb_2015 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2015.csv")
-deliniate_lulc_info_sb_2016 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2016.csv")
-deliniate_lulc_info_sb_2017 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2017.csv")
-deliniate_lulc_info_sb_2018 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2018.csv")
-deliniate_lulc_info_sb_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2019.csv")
+library(units)
 
-sb_full_ds <- rbind(deliniate_lulc_info_sb_2010, deliniate_lulc_info_sb_2011, deliniate_lulc_info_sb_2012, deliniate_lulc_info_sb_2013, deliniate_lulc_info_sb_2014, deliniate_lulc_info_sb_2015, deliniate_lulc_info_sb_2016, deliniate_lulc_info_sb_2017, deliniate_lulc_info_sb_2018, deliniate_lulc_info_sb_2019)
+all_bmp_all_sites_lulc_storage_yearly_summaries <- rbind.fill(all_bmp_cb_lulc_storage__yearly_summaries, all_bmp_cr_lulc_storage__yearly_summaries, all_bmp_sb_lulc_storage__yearly_summaries, all_bmp_tr104_lulc_storage__yearly_summaries, all_bmp_tr109_lulc_storage__yearly_summaries)
 
-sb_full_ds_stores <- left_join(sb_full_ds, bmp_full)
+lulc_for_full_basins <- read_csv("Output_for_Files/lulc_for_full_basins.csv")
 
+lulc_for_full_basins <- lulc_for_full_basins %>%
+  select(-c(percent_lulc, `...1`))%>%
+  mutate(year = as.character(year))
 
-sb_full_ds_stores <- sb_full_ds_stores %>%
-  mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))
+lulc_for_full_basins <- pivot_wider(lulc_for_full_basins, names_from = updated_gridcode, values_from = total_area)
+
+colnames(lulc_for_full_basins) <- c("year", "site", "total_basin_area", "total_basin_20", "total_basin_30", "total_basin_40", "total_basin_70")
+
+all_bmp_all_sites_lulc_storage_yearly_summaries <- left_join(all_bmp_all_sites_lulc_storage_yearly_summaries, lulc_for_full_basins, by = c("year", "site"))
   
+all_bmp_all_sites_lulc_storage_yearly_summaries<- drop_units(all_bmp_all_sites_lulc_storage_yearly_summaries)%>%
+  dplyr::mutate(percent_20_treated = (`20`/total_basin_20)*100, untreated_20 = (total_basin_20 - `20`),
+         percent_30_treated = (`30`/total_basin_30)*100, untreated_30 = (total_basin_30 - `30`),
+         percent_40_treated = (`40`/total_basin_40)*100, untreated_40 = (total_basin_40 - `40`),
+         percent_20_treated = (`70`/total_basin_70)*100, untreated_70 = (total_basin_70 - `20`))
 
-
-sb_full_ds_stores_2010 <- sb_full_ds_stores %>%
-  filter(FINAL_DATE < "2011-01-01" & year == "2010") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-sb_full_ds_stores_2011 <- sb_full_ds_stores %>%
-  filter(FINAL_DATE < "2012-01-01" & year == "2011") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-sb_full_ds_stores_2012 <- sb_full_ds_stores %>%
-  filter(FINAL_DATE < "2013-01-01" & year == "2012") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-sb_full_ds_stores_2013 <- sb_full_ds_stores %>%
-  filter(FINAL_DATE < "2014-01-01" & year == "2013") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-sb_full_ds_stores_2014 <- sb_full_ds_stores %>%
-  filter(FINAL_DATE < "2015-01-01" & year == "2014") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-sb_full_ds_stores_2015 <- sb_full_ds_stores %>%
-  filter(FINAL_DATE < "2016-01-01" & year == "2015") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-sb_full_ds_stores_2016 <- sb_full_ds_stores %>%
-  filter(FINAL_DATE < "2017-01-01" & year == "2016") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-sb_full_ds_stores_2017 <- sb_full_ds_stores %>%
-  filter(FINAL_DATE < "2018-01-01" & year == "2017") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-sb_full_ds_stores_2018 <- sb_full_ds_stores %>%
-  filter(FINAL_DATE < "2019-01-01" & year == "2018") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-sb_full_ds_stores_2019 <- sb_full_ds_stores %>%
-  filter(FINAL_DATE < "2020-01-01" & year == "2019") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-
-
-
-stores_lulc_sb <- rbind(sb_full_ds_stores_2010, sb_full_ds_stores_2011, sb_full_ds_stores_2012, sb_full_ds_stores_2013, sb_full_ds_stores_2014, sb_full_ds_stores_2015, sb_full_ds_stores_2016, sb_full_ds_stores_2017, sb_full_ds_stores_2018, sb_full_ds_stores_2019) 
-
-```
-
-# CB Yearly
-```{r}
-deliniate_lulc_info_cb_2010 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2010.csv")
-deliniate_lulc_info_cb_2011 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2011.csv")
-deliniate_lulc_info_cb_2012 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2012.csv")
-deliniate_lulc_info_cb_2013 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2013.csv")
-deliniate_lulc_info_cb_2014 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2014.csv")
-deliniate_lulc_info_cb_2015 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2015.csv")
-deliniate_lulc_info_cb_2016 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2016.csv")
-deliniate_lulc_info_cb_2017 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2017.csv")
-deliniate_lulc_info_cb_2018 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2018.csv")
-deliniate_lulc_info_cb_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2019.csv")
-
-cb_full_ds <- rbind(deliniate_lulc_info_cb_2010, deliniate_lulc_info_cb_2011, deliniate_lulc_info_cb_2012, deliniate_lulc_info_cb_2013, deliniate_lulc_info_cb_2014, deliniate_lulc_info_cb_2015, deliniate_lulc_info_cb_2016, deliniate_lulc_info_cb_2017, deliniate_lulc_info_cb_2018, deliniate_lulc_info_cb_2019)
-
-cb_full_ds_stores <- left_join(cb_full_ds, bmp_full)
-
-
-cb_full_ds_stores <- cb_full_ds_stores %>%
-  mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))
-  
-
-
-cb_full_ds_stores_2010 <- cb_full_ds_stores %>%
-  filter(FINAL_DATE < "2011-01-01" & year == "2010") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-cb_full_ds_stores_2011 <- cb_full_ds_stores %>%
-  filter(FINAL_DATE < "2012-01-01" & year == "2011") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-cb_full_ds_stores_2012 <- cb_full_ds_stores %>%
-  filter(FINAL_DATE < "2013-01-01" & year == "2012") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-cb_full_ds_stores_2013 <- cb_full_ds_stores %>%
-  filter(FINAL_DATE < "2014-01-01" & year == "2013") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-cb_full_ds_stores_2014 <- cb_full_ds_stores %>%
-  filter(FINAL_DATE < "2015-01-01" & year == "2014") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-cb_full_ds_stores_2015 <- cb_full_ds_stores %>%
-  filter(FINAL_DATE < "2016-01-01" & year == "2015") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-cb_full_ds_stores_2016 <- cb_full_ds_stores %>%
-  filter(FINAL_DATE < "2017-01-01" & year == "2016") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-cb_full_ds_stores_2017 <- cb_full_ds_stores %>%
-  filter(FINAL_DATE < "2018-01-01" & year == "2017") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-cb_full_ds_stores_2018 <- cb_full_ds_stores %>%
-  filter(FINAL_DATE < "2019-01-01" & year == "2018") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-cb_full_ds_stores_2019 <- cb_full_ds_stores %>%
-  filter(FINAL_DATE < "2020-01-01" & year == "2019") %>%
-  group_by(year, site) %>%
-  summarize(
-            lulc_70 = sum(lulc_70, na.rm = TRUE),
-            lulc_40 = sum(lulc_40, na.rm = TRUE),
-            lulc_30 = sum(lulc_30, na.rm = TRUE),
-            lulc_20 = sum(lulc_20, na.rm = TRUE))
-
-
-
-
-stores_lulc_cb <- rbind(cb_full_ds_stores_2010, cb_full_ds_stores_2011, cb_full_ds_stores_2012, cb_full_ds_stores_2013, cb_full_ds_stores_2014, cb_full_ds_stores_2015, cb_full_ds_stores_2016, cb_full_ds_stores_2017, cb_full_ds_stores_2018, cb_full_ds_stores_2019) 
-
-```
-
-# Creating one dataset for analysis 
-
-```{r}
-
-land_use_storage_summarized <- rbind(stores_lulc_tr104, stores_lulc_cr, stores_lulc_sb, stores_lulc_cb, stores_lulc_tr109)
-
-write.csv(land_use_storage_summarized, file = "./Output_for_Files/land_use_storage_summary_by_site_year.csv")
-
-
+write.csv(all_bmp_all_sites_lulc_storage_yearly_summaries, file = "./Output_for_Files/all_bmp_type_yearly_summary.csv")
 
 ```
 
