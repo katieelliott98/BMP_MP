@@ -1,0 +1,969 @@
+---
+title: "Infiltration vs. Filtration"
+author: "Kaitlyn Elliott"
+date: "2023-02-16"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Counts of BMP Types 
+
+```{r}
+all_sites <- rbind(deliniate_lulc_info_cb_2019, deliniate_lulc_info_cr_2019, deliniate_lulc_info_tr104_2019, deliniate_lulc_info_tr109_2019, deliniate_lulc_info_sb_2019)
+    
+all_sites_bmp_type <- all_sites %>%
+  dplyr::mutate(treatment_type = case_when(Type_Desc %in% c("BaySaver", "Contech CDS System", "Oil/grit separator","Oil/grit separator and sand filter", "Stormceptor", "Stormfilter", "Porous Pavement", "Aquaswirl")~"Filtration", Type_Desc %in% c("Bioretention, quality control", "Bioswale", "Infiltration trench", "Infiltration trench, underground", "Micro-Bioretention", "Pond-dry", "Pond-dry, extended detention", "Pond-dry, sand filter base", "Pond-wetland, extended detention", "Pond-wetland only", "Pond-wetland, extended detention", "Sand filter", "Sand filter, underground", "Stormchamber", "Underground detention", "Vegetated/Grass Swale", "Dry Swale", "Infiltration Berm", "Dry Well", "Tree Box")~"Infiltration", Type_Desc %in% c("Flow splitter", "Flow splitter underground")~"Other"))%>%
+  dplyr::group_by(site)%>%
+  dplyr::summarize(bmp_infiltrate = length(which(treatment_type=="Infiltration")),
+            bmp_filtrate = length(which(treatment_type == "Filtration")))
+
+
+```
+
+
+
+# TR109 Summaries Yearly Infiltration
+
+```{r}
+
+deliniate_lulc_info_tr109_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2019.csv") 
+deliniate_lulc_info_tr104_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2019.csv") 
+deliniate_lulc_info_cb_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2019.csv") 
+deliniate_lulc_info_cr_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2019.csv") 
+deliniate_lulc_info_sb_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2019.csv") 
+
+
+yearly_summary_lulc_infiltration <- function(site_bmp_deliniated, deliniated_lulc_site_2019, filter_date, lulc_year, site_outline, site_name, year){
+ 
+  site_for_summary_ds <-cbind(site_bmp_deliniated, deliniated_lulc_site_2019)%>%
+    mutate(treatment_type = case_when(Type_Desc %in% c("BaySaver", "Contech CDS System", "Oil/grit separator","Oil/grit separator and sand filter", "Stormceptor", "Stormfilter", "Porous Pavement", "Aquaswirl")~"Filtration", Type_Desc %in% c("Bioretention, quality control", "Bioswale", "Infiltration trench", "Infiltration trench, underground", "Micro-Bioretention", "Pond-dry", "Pond-dry, extended detention", "Pond-dry, sand filter base", "Pond-wetland, extended detention", "Pond-wetland only", "Pond-wetland, extended detention", "Sand filter", "Sand filter, underground", "Stormchamber", "Underground detention", "Vegetated/Grass Swale", "Dry Swale", "Infiltration Berm", "Dry Well", "Tree Box")~"Infiltration", Type_Desc %in% c("Flow splitter", "Flow splitter underground")~"Other"))%>%
+  filter(treatment_type == "Infiltration")
+  
+  
+  site_for_summary_ds <- site_for_summary_ds %>%
+  dplyr::mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))%>%
+  filter(FINAL_DATE < filter_date )
+  
+  site_for_summary <- st_union(site_for_summary_ds)
+  
+  site_lulc_year_whole <- st_intersection(lulc_year, site_outline)
+  
+  site_lulc_year <- st_difference(site_lulc_year_whole, site_for_summary)
+  
+  site_lulc_year <- st_union(site_lulc_year)
+
+  site_lulc_year <- st_difference(site_lulc_year_whole, site_lulc_year)
+
+  site_lulc_year$area <- st_area(site_lulc_year)
+  
+  site_lulc_year_summary <-as.data.frame(site_lulc_year) %>%
+  group_by(gridcode)%>%
+  dplyr::summarize(lulc_area = sum(area))%>%
+  dplyr::mutate(site = site_name, year = year)%>%
+  dplyr::select(gridcode, lulc_area, site, year)
+
+
+return(site_lulc_year_summary)
+
+
+
+}
+
+
+tr109_2010 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2010")
+
+tr109_2011 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2011")
+
+tr109_2012 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2012")
+
+tr109_2013 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2013")
+
+tr109_2014 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2014")
+
+tr109_2015 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2015")
+
+tr109_2016 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2016")
+
+tr109_2017 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2017")
+
+tr109_2018 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2018")
+
+tr109_2019 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2019")
+
+all_bmp_tr109_lulc_storage__yearly_summaries <- rbind.fill(tr109_2019, tr109_2018, tr109_2017, tr109_2016, tr109_2015, tr109_2014, tr109_2013, tr109_2012, tr109_2011, tr109_2010)
+
+all_bmp_tr109_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_tr109_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+
+```
+# TR-104 Summaries Yearly Infiltration
+```{r}
+
+
+tr104_2010 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2010")
+
+tr104_2011 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2011")
+
+tr104_2012 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2012")
+
+tr104_2013 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2013")
+
+tr104_2014 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2014")
+
+tr104_2015 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2015")
+
+tr104_2016 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2016")
+
+tr104_2017 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2017")
+
+tr104_2018 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2018")
+
+tr104_2019 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2019")
+
+all_bmp_tr104_lulc_storage__yearly_summaries <- rbind.fill(tr104_2019, tr104_2018, tr104_2017, tr104_2016, tr104_2015, tr104_2014, tr104_2013, tr104_2012, tr104_2011, tr104_2010)
+
+all_bmp_tr104_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_tr104_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+```
+# Cabin Branch Summaries Yearly Infiltration
+
+```{r}
+
+
+
+cb_2017 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cb_2019,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = cabin_branch,
+                    site_name = "cb",
+                    year = "2017")
+
+cb_2018 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cb_2019,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = cabin_branch,
+                    site_name = "cb",
+                    year = "2018")
+
+cb_2019 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cb_2019,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = cabin_branch,
+                    site_name = "cb",
+                    year = "2019")
+
+all_bmp_cb_lulc_storage__yearly_summaries <- rbind.fill(cb_2019, cb_2018, cb_2017)
+
+all_bmp_cb_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_cb_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+```
+
+# Crystal Rock Summaries Yearly Infiltration
+
+```{r}
+
+cr_2010 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2010")
+
+cr_2011 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2011")
+
+cr_2012 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2012")
+
+cr_2013 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2013")
+
+cr_2014 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2014")
+
+cr_2015 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2015")
+
+cr_2016 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2016")
+
+cr_2017 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2017")
+
+cr_2018 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2018")
+
+cr_2019 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2019")
+
+all_bmp_cr_lulc_storage__yearly_summaries <- rbind.fill(cr_2019, cr_2018, cr_2017, cr_2016, cr_2015, cr_2014, cr_2013, cr_2012, cr_2011, cr_2010)
+
+all_bmp_cr_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_cr_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+```
+
+# Soper Branch Summaries Yearly infiltration
+
+```{r}
+
+
+sb_2010 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2010")
+
+sb_2011 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2011")
+
+sb_2012 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2012")
+
+sb_2013 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2013")
+
+sb_2014 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2014")
+
+sb_2015 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2015")
+
+sb_2016 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2016")
+
+sb_2017 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2017")
+
+sb_2018 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2018")
+
+sb_2019 <- yearly_summary_lulc_infiltration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2019")
+
+all_bmp_sb_lulc_storage__yearly_summaries <- rbind.fill(sb_2019, sb_2018, sb_2017, sb_2016, sb_2015, sb_2014, sb_2013, sb_2012, sb_2011, sb_2010)
+
+all_bmp_sb_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_sb_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+
+```
+
+```{r}
+library(units)
+
+all_bmp_all_sites_lulc_storage_yearly_summaries <- rbind.fill(all_bmp_cb_lulc_storage__yearly_summaries, all_bmp_cr_lulc_storage__yearly_summaries, all_bmp_sb_lulc_storage__yearly_summaries, all_bmp_tr104_lulc_storage__yearly_summaries, all_bmp_tr109_lulc_storage__yearly_summaries)
+
+
+lulc_for_full_basins <- read_csv("Output_for_Files/lulc_for_full_basins.csv")
+
+lulc_for_full_basins <- lulc_for_full_basins %>%
+  select(-c(percent_lulc, `...1`))%>%
+  mutate(year = as.character(year))
+
+lulc_for_full_basins <- pivot_wider(lulc_for_full_basins, names_from = updated_gridcode, values_from = total_area)
+
+colnames(lulc_for_full_basins) <- c("year", "site", "total_basin_area", "total_basin_20", "total_basin_30", "total_basin_40", "total_basin_70")
+
+all_bmp_all_sites_lulc_storage_yearly_summaries <- left_join(all_bmp_all_sites_lulc_storage_yearly_summaries, lulc_for_full_basins, by = c("year", "site"))
+  
+all_bmp_all_sites_lulc_storage_yearly_summaries<- drop_units(all_bmp_all_sites_lulc_storage_yearly_summaries)%>%
+  dplyr::mutate(percent_20_treated = (`20`/total_basin_20)*100, untreated_20 = (total_basin_20 - `20`),
+         percent_30_treated = (`30`/total_basin_30)*100, untreated_30 = (total_basin_30 - `30`),
+         percent_40_treated = (`40`/total_basin_40)*100, untreated_40 = (total_basin_40 - `40`),
+         percent_70_treated = (`70`/total_basin_70)*100, untreated_70 = (total_basin_70 - `20`))
+
+write.csv(all_bmp_all_sites_lulc_storage_yearly_summaries, file = "./Output_for_Files/infiltration_bmp_type_yearly_summary.csv")
+
+```
+
+
+
+
+
+
+# TR109 Summaries Yearly Filtration
+
+```{r}
+
+deliniate_lulc_info_tr109_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2019.csv") 
+deliniate_lulc_info_tr104_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2019.csv") 
+deliniate_lulc_info_cb_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2019.csv") 
+deliniate_lulc_info_cr_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2019.csv") 
+deliniate_lulc_info_sb_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2019.csv") 
+
+
+yearly_summary_lulc_filtration <- function(site_bmp_deliniated, deliniated_lulc_site_2019, filter_date, lulc_year, site_outline, site_name, year){
+ 
+  site_for_summary_ds <-cbind(site_bmp_deliniated, deliniated_lulc_site_2019)%>%
+    mutate(treatment_type = case_when(Type_Desc %in% c("BaySaver", "Contech CDS System", "Oil/grit separator","Oil/grit separator and sand filter", "Stormceptor", "Stormfilter", "Porous Pavement", "Aquaswirl")~"Filtration", Type_Desc %in% c("Bioretention, quality control", "Bioswale", "Infiltration trench", "Infiltration trench, underground", "Micro-Bioretention", "Pond-dry", "Pond-dry, extended detention", "Pond-dry, sand filter base", "Pond-wetland, extended detention", "Pond-wetland only", "Pond-wetland, extended detention", "Sand filter", "Sand filter, underground", "Stormchamber", "Underground detention", "Vegetated/Grass Swale", "Dry Swale", "Infiltration Berm", "Dry Well", "Tree Box")~"Infiltration", Type_Desc %in% c("Flow splitter", "Flow splitter underground")~"Other"))%>%
+  filter(treatment_type == "Filtration")
+  
+  
+  site_for_summary_ds <- site_for_summary_ds %>%
+  dplyr::mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))%>%
+  filter(FINAL_DATE < filter_date )
+  
+  site_for_summary <- st_union(site_for_summary_ds)
+  
+  site_lulc_year_whole <- st_intersection(lulc_year, site_outline)
+  
+  site_lulc_year <- st_difference(site_lulc_year_whole, site_for_summary)
+  
+  site_lulc_year <- st_union(site_lulc_year)
+
+  site_lulc_year <- st_difference(site_lulc_year_whole, site_lulc_year)
+
+  site_lulc_year$area <- st_area(site_lulc_year)
+  
+  site_lulc_year_summary <-as.data.frame(site_lulc_year) %>%
+  group_by(gridcode)%>%
+  dplyr::summarize(lulc_area = sum(area))%>%
+  dplyr::mutate(site = site_name, year = year)%>%
+  dplyr::select(gridcode, lulc_area, site, year)
+
+
+return(site_lulc_year_summary)
+
+
+
+}
+
+
+tr109_2010 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2010")
+
+tr109_2011 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2011")
+
+tr109_2012 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2012")
+
+tr109_2013 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2013")
+
+tr109_2014 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2014")
+
+tr109_2015 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2015")
+
+tr109_2016 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2016")
+
+tr109_2017 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2017")
+
+tr109_2018 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2018")
+
+tr109_2019 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr109_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = tr109,
+                    site_name = "tr109",
+                    year = "2019")
+
+all_bmp_tr109_lulc_storage__yearly_summaries <- rbind.fill(tr109_2019, tr109_2018, tr109_2017, tr109_2016, tr109_2015, tr109_2014, tr109_2013, tr109_2012, tr109_2011, tr109_2010)
+
+all_bmp_tr109_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_tr109_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+
+```
+# TR-104 Summaries Yearly Filtration
+```{r}
+
+
+tr104_2010 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2010")
+
+tr104_2011 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2011")
+
+tr104_2012 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2012")
+
+tr104_2013 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2013")
+
+tr104_2014 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2014")
+
+tr104_2015 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2015")
+
+tr104_2016 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2016")
+
+tr104_2017 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2017")
+
+tr104_2018 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2018")
+
+tr104_2019 <- yearly_summary_lulc_filtration(site_bmp_deliniated = tr104_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = tr104,
+                    site_name = "tr104",
+                    year = "2019")
+
+all_bmp_tr104_lulc_storage__yearly_summaries <- rbind.fill(tr104_2019, tr104_2018, tr104_2017, tr104_2016, tr104_2015, tr104_2014, tr104_2013, tr104_2012, tr104_2011, tr104_2010)
+
+all_bmp_tr104_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_tr104_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+```
+# Cabin Branch Summaries Yearly Filtration
+
+```{r}
+
+
+
+cb_2017 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cb_2019,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = cabin_branch,
+                    site_name = "cb",
+                    year = "2017")
+
+cb_2018 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cb_2019,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = cabin_branch,
+                    site_name = "cb",
+                    year = "2018")
+
+cb_2019 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cb_2019,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = cabin_branch,
+                    site_name = "cb",
+                    year = "2019")
+
+all_bmp_cb_lulc_storage__yearly_summaries <- rbind.fill(cb_2019, cb_2018, cb_2017)
+
+all_bmp_cb_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_cb_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+```
+
+# Crystal Rock Summaries Yearly Filtration
+
+```{r}
+
+cr_2010 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2010")
+
+cr_2011 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2011")
+
+cr_2012 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2012")
+
+cr_2013 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2013")
+
+cr_2014 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2014")
+
+cr_2015 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2015")
+
+cr_2016 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2016")
+
+cr_2017 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2017")
+
+cr_2018 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2018")
+
+cr_2019 <- yearly_summary_lulc_filtration(site_bmp_deliniated = cr_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_cr_2019,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = crystal_rock,
+                    site_name = "cr",
+                    year = "2019")
+
+all_bmp_cr_lulc_storage__yearly_summaries <- rbind.fill(cr_2019, cr_2018, cr_2017, cr_2016, cr_2015, cr_2014, cr_2013, cr_2012, cr_2011, cr_2010)
+
+all_bmp_cr_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_cr_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+```
+
+# Soper Branch Summaries Yearly Filtration
+
+```{r}
+
+
+sb_2010 <- yearly_summary_lulc_filtration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2011-01-01" ,
+                    lulc_year = lulc_2010,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2010")
+
+sb_2011 <- yearly_summary_lulc_filtration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2012-01-01" ,
+                    lulc_year = lulc_2011,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2011")
+
+sb_2012 <- yearly_summary_lulc_filtration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2013-01-01" ,
+                    lulc_year = lulc_2012,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2012")
+
+sb_2013 <- yearly_summary_lulc_filtration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2014-01-01" ,
+                    lulc_year = lulc_2013,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2013")
+
+sb_2014 <- yearly_summary_lulc_filtration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2015-01-01" ,
+                    lulc_year = lulc_2014,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2014")
+
+sb_2015 <- yearly_summary_lulc_filtration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2016-01-01" ,
+                    lulc_year = lulc_2015,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2015")
+
+sb_2016 <- yearly_summary_lulc_filtration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2017-01-01" ,
+                    lulc_year = lulc_2016,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2016")
+
+sb_2017 <- yearly_summary_lulc_filtration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2018-01-01" ,
+                    lulc_year = lulc_2017,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2017")
+
+sb_2018 <- yearly_summary_lulc_filtration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2019-01-01" ,
+                    lulc_year = lulc_2018,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2018")
+
+sb_2019 <- yearly_summary_lulc_filtration(site_bmp_deliniated = sb_bmp_deliniated, 
+                    deliniated_lulc_site_2019 = deliniate_lulc_info_sb_2019,
+                    filter_date = "2020-01-01" ,
+                    lulc_year = lulc_2019,
+                    site_outline = soper_branch,
+                    site_name = "sb",
+                    year = "2019")
+
+all_bmp_sb_lulc_storage__yearly_summaries <- rbind.fill(sb_2019, sb_2018, sb_2017, sb_2016, sb_2015, sb_2014, sb_2013, sb_2012, sb_2011, sb_2010)
+
+all_bmp_sb_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_sb_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
+
+```
+
+```{r}
+library(units)
+
+all_bmp_all_sites_lulc_storage_yearly_summaries <- rbind.fill(all_bmp_cb_lulc_storage__yearly_summaries, all_bmp_cr_lulc_storage__yearly_summaries, all_bmp_sb_lulc_storage__yearly_summaries, all_bmp_tr104_lulc_storage__yearly_summaries, all_bmp_tr109_lulc_storage__yearly_summaries)
+
+
+
+
+lulc_for_full_basins <- read_csv("Output_for_Files/lulc_for_full_basins.csv")
+
+lulc_for_full_basins <- lulc_for_full_basins %>%
+  select(-c(percent_lulc, `...1`))%>%
+  mutate(year = as.character(year))
+
+lulc_for_full_basins <- pivot_wider(lulc_for_full_basins, names_from = updated_gridcode, values_from = total_area)
+
+colnames(lulc_for_full_basins) <- c("year", "site", "total_basin_area", "total_basin_20", "total_basin_30", "total_basin_40", "total_basin_70")
+
+all_bmp_all_sites_lulc_storage_yearly_summaries <- left_join(all_bmp_all_sites_lulc_storage_yearly_summaries, lulc_for_full_basins, by = c("year", "site"))
+  
+all_bmp_all_sites_lulc_storage_yearly_summaries<- drop_units(all_bmp_all_sites_lulc_storage_yearly_summaries)%>%
+  dplyr::mutate(percent_20_treated = (`20`/total_basin_20)*100, untreated_20 = (total_basin_20 - `20`),
+         percent_30_treated = (`30`/total_basin_30)*100, untreated_30 = (total_basin_30 - `30`),
+         percent_40_treated = (`40`/total_basin_40)*100, untreated_40 = (total_basin_40 - `40`),
+         percent_70_treated = (`70`/total_basin_70)*100, untreated_70 = (total_basin_70 - `20`))
+
+write.csv(all_bmp_all_sites_lulc_storage_yearly_summaries, file = "./Output_for_Files/filtration_bmp_type_yearly_summary.csv")
+
+```
