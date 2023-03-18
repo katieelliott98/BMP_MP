@@ -19,6 +19,7 @@ library(tidyr)
 library(plyr)
 
 
+
 # Delininated BMPs from ArcGIS Pro
 
 tr104_bmp_deliniated <- st_read(file.path("./Input_Files/deliniate_tr104.shp"))
@@ -551,8 +552,6 @@ yearly_summary_lulc <- function(site_bmp_deliniated, deliniated_lulc_site_2019, 
  
   site_for_summary_ds <-cbind(site_bmp_deliniated, deliniated_lulc_site_2019)
   
-  site_for_summary_ds <-left_join(site_for_summary_ds, bmp_full_ds, by = 'ASSET')
-  
   site_for_summary_ds <- site_for_summary_ds %>%
   dplyr::mutate(FINAL_DATE = as.Date(FINAL_DATE, format = "%m/%d/%Y"))%>%
   filter(FINAL_DATE < filter_date )
@@ -580,104 +579,97 @@ site_lulc_year_summary <- site_lulc_year_summary %>%
 
 return(site_lulc_year_summary)
 
-write.csv(site_lulc_year_summary, file =paste0( "./Output_for_Files/",site_name, year, "lulcandstorage_yearly_summary.csv"))
 
 }
 
 
 tr109_2010 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2011-01-01" ,
                     lulc_year = lulc_2010,
                     site_outline = tr109,
-                    site_name = "TR109",
+                    site_name = "tr109",
                     year = "2010")
 
 tr109_2011 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2012-01-01" ,
                     lulc_year = lulc_2011,
                     site_outline = tr109,
-                    site_name = "TR109",
+                    site_name = "tr109",
                     year = "2011")
 
 tr109_2012 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2013-01-01" ,
                     lulc_year = lulc_2012,
                     site_outline = tr109,
-                    site_name = "TR109",
+                    site_name = "tr109",
                     year = "2012")
 
 tr109_2013 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2014-01-01" ,
                     lulc_year = lulc_2013,
                     site_outline = tr109,
-                    site_name = "TR109",
+                    site_name = "tr109",
                     year = "2013")
 
 tr109_2014 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2015-01-01" ,
                     lulc_year = lulc_2014,
                     site_outline = tr109,
-                    site_name = "TR109",
+                    site_name = "tr109",
                     year = "2014")
 
 tr109_2015 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2016-01-01" ,
                     lulc_year = lulc_2015,
                     site_outline = tr109,
-                    site_name = "TR109",
+                    site_name = "tr109",
                     year = "2015")
 
 tr109_2016 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2017-01-01" ,
                     lulc_year = lulc_2016,
                     site_outline = tr109,
-                    site_name = "TR109",
+                    site_name = "tr109",
                     year = "2016")
 
 tr109_2017 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2018-01-01" ,
                     lulc_year = lulc_2017,
                     site_outline = tr109,
-                    site_name = "TR109",
+                    site_name = "tr109",
                     year = "2017")
 
 tr109_2018 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2019-01-01" ,
                     lulc_year = lulc_2018,
                     site_outline = tr109,
-                    site_name = "TR109",
+                    site_name = "tr109",
                     year = "2018")
 
 tr109_2019 <- yearly_summary_lulc(site_bmp_deliniated = tr109_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr109_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2020-01-01" ,
                     lulc_year = lulc_2019,
                     site_outline = tr109,
-                    site_name = "TR109",
+                    site_name = "tr109",
                     year = "2019")
 
 all_bmp_tr109_lulc_storage__yearly_summaries <- rbind.fill(tr109_2019, tr109_2018, tr109_2017, tr109_2016, tr109_2015, tr109_2014, tr109_2013, tr109_2012, tr109_2011, tr109_2010)
 
+all_bmp_tr109_lulc_storage__yearly_summaries <- all_bmp_tr109_lulc_storage__yearly_summaries %>%
+  dplyr::mutate(gridcode = case_when(gridcode == 20 ~ "treated_20", gridcode == 30 ~ "treated_30", gridcode == 40 ~ "treated_40", gridcode == 70 ~ "treated_70"))
+
 all_bmp_tr109_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_tr109_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
+
 
 
 ```
@@ -768,7 +760,6 @@ tr104_2018 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated,
 
 tr104_2019 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated, 
                     deliniated_lulc_site_2019 = deliniate_lulc_info_tr104_2019,
-                    bmp_full_ds = bmp_full,
                     filter_date = "2020-01-01" ,
                     lulc_year = lulc_2019,
                     site_outline = tr104,
@@ -776,6 +767,9 @@ tr104_2019 <- yearly_summary_lulc(site_bmp_deliniated = tr104_bmp_deliniated,
                     year = "2019")
 
 all_bmp_tr104_lulc_storage__yearly_summaries <- rbind.fill(tr104_2019, tr104_2018, tr104_2017, tr104_2016, tr104_2015, tr104_2014, tr104_2013, tr104_2012, tr104_2011, tr104_2010)
+
+all_bmp_tr104_lulc_storage__yearly_summaries <- all_bmp_tr104_lulc_storage__yearly_summaries %>%
+  dplyr::mutate(gridcode = case_when(gridcode == 20 ~ "treated_20", gridcode == 30 ~ "treated_30", gridcode == 40 ~ "treated_40", gridcode == 70 ~ "treated_70"))
 
 all_bmp_tr104_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_tr104_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
 
@@ -814,6 +808,9 @@ cb_2019 <- yearly_summary_lulc(site_bmp_deliniated = cb_bmp_deliniated,
                     year = "2019")
 
 all_bmp_cb_lulc_storage__yearly_summaries <- rbind.fill(cb_2019, cb_2018, cb_2017)
+
+all_bmp_cb_lulc_storage__yearly_summaries <- all_bmp_cb_lulc_storage__yearly_summaries %>%
+  dplyr::mutate(gridcode = case_when(gridcode == 20 ~ "treated_20", gridcode == 30 ~ "treated_30", gridcode == 40 ~ "treated_40", gridcode == 70 ~ "treated_70"))
 
 all_bmp_cb_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_cb_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
 
@@ -914,6 +911,11 @@ cr_2019 <- yearly_summary_lulc(site_bmp_deliniated = cr_bmp_deliniated,
                     year = "2019")
 
 all_bmp_cr_lulc_storage__yearly_summaries <- rbind.fill(cr_2019, cr_2018, cr_2017, cr_2016, cr_2015, cr_2014, cr_2013, cr_2012, cr_2011, cr_2010)
+
+all_bmp_cr_lulc_storage__yearly_summaries <- all_bmp_cr_lulc_storage__yearly_summaries %>%
+  dplyr::mutate(gridcode = case_when(gridcode == 20 ~ "treated_20", gridcode == 30 ~ "treated_30", gridcode == 40 ~ "treated_40", gridcode == 70 ~ "treated_70"))
+
+
 
 all_bmp_cr_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_cr_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
 
@@ -1016,6 +1018,9 @@ sb_2019 <- yearly_summary_lulc(site_bmp_deliniated = sb_bmp_deliniated,
 
 all_bmp_sb_lulc_storage__yearly_summaries <- rbind.fill(sb_2019, sb_2018, sb_2017, sb_2016, sb_2015, sb_2014, sb_2013, sb_2012, sb_2011, sb_2010)
 
+all_bmp_sb_lulc_storage__yearly_summaries <- all_bmp_sb_lulc_storage__yearly_summaries %>%
+  dplyr::mutate(gridcode = case_when(gridcode == 20 ~ "treated_20", gridcode == 30 ~ "treated_30", gridcode == 40 ~ "treated_40", gridcode == 70 ~ "treated_70"))
+
 all_bmp_sb_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_sb_lulc_storage__yearly_summaries, names_from = gridcode, values_from = lulc_area)
 
 
@@ -1025,6 +1030,8 @@ all_bmp_sb_lulc_storage__yearly_summaries <- pivot_wider(all_bmp_sb_lulc_storage
 library(units)
 
 all_bmp_all_sites_lulc_storage_yearly_summaries <- rbind.fill(all_bmp_cb_lulc_storage__yearly_summaries, all_bmp_cr_lulc_storage__yearly_summaries, all_bmp_sb_lulc_storage__yearly_summaries, all_bmp_tr104_lulc_storage__yearly_summaries, all_bmp_tr109_lulc_storage__yearly_summaries)
+
+
 
 lulc_for_full_basins <- read_csv("Output_for_Files/lulc_for_full_basins.csv")
 
@@ -1038,13 +1045,15 @@ colnames(lulc_for_full_basins) <- c("year", "site", "total_basin_area", "total_b
 
 all_bmp_all_sites_lulc_storage_yearly_summaries <- left_join(all_bmp_all_sites_lulc_storage_yearly_summaries, lulc_for_full_basins, by = c("year", "site"))
   
-all_bmp_all_sites_lulc_storage_yearly_summaries<- drop_units(all_bmp_all_sites_lulc_storage_yearly_summaries)%>%
-  dplyr::mutate(percent_20_treated = (`20`/total_basin_20)*100, untreated_20 = (total_basin_20 - `20`),
-         percent_30_treated = (`30`/total_basin_30)*100, untreated_30 = (total_basin_30 - `30`),
-         percent_40_treated = (`40`/total_basin_40)*100, untreated_40 = (total_basin_40 - `40`),
-         percent_20_treated = (`70`/total_basin_70)*100, untreated_70 = (total_basin_70 - `20`))
+all_bmp_all_sites_lulc_storage_yearly_summaries<- all_bmp_all_sites_lulc_storage_yearly_summaries%>%
+  dplyr::mutate(percent_20_treated = (treated_20/total_basin_20)*100, untreated_20 = (total_basin_20 -drop_units(treated_20)),
+         percent_30_treated = (treated_30/total_basin_30)*100, untreated_30 = (total_basin_30 - drop_units(treated_20)),
+         percent_40_treated = (treated_40/total_basin_40)*100, untreated_40 = (total_basin_40 - drop_units(treated_20)),
+         percent_70_treated = (treated_70/total_basin_70)*100, untreated_70 = (total_basin_70 - drop_units(treated_20)))
 
 write.csv(all_bmp_all_sites_lulc_storage_yearly_summaries, file = "./Output_for_Files/all_bmp_type_yearly_summary.csv")
+
+all_bmp_type_yearly_summary <-all_bmp_all_sites_lulc_storage_yearly_summaries
 
 ```
 
