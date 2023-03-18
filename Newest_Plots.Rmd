@@ -1,0 +1,440 @@
+---
+title: "More Plots"
+author: "Kaitlyn Elliott"
+date: "2023-02-17"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+
+full_site_lulc_and_storage_cr <- read_csv("Output_for_Files/full_site_lulc_and_storage_cr.csv")
+
+full_site_lulc_and_storage_cb <- read_csv("Output_for_Files/full_site_lulc_and_storage_cb.csv")
+
+full_site_lulc_and_storage_tr109 <- read_csv("Output_for_Files/full_site_lulc_and_storage_tr109.csv")
+
+full_site_lulc_and_storage_tr104 <- read_csv("Output_for_Files/full_site_lulc_and_storage_tr104.csv")
+
+full_site_lulc_and_storage_sb <- read_csv("Output_for_Files/full_site_lulc_and_storage_sb.csv")
+
+
+
+
+full_site_lulc_and_storage_cr_infiltrate <- read_csv("Output_for_Files/full_site_lulc_and_storage_cr_infiltration.csv")
+
+full_site_lulc_and_storage_cb_infiltrate <- read_csv("Output_for_Files/full_site_lulc_and_storage_cb_infiltration.csv")
+
+full_site_lulc_and_storage_tr109_infiltrate <- read_csv("Output_for_Files/full_site_lulc_and_storage_tr109_infiltration.csv")
+
+full_site_lulc_and_storage_tr104_infiltrate <- read_csv("Output_for_Files/full_site_lulc_and_storage_tr104_infiltration.csv")
+
+full_site_lulc_and_storage_sb_infiltrate <- read_csv("Output_for_Files/full_site_lulc_and_storage_sb_infiltration.csv")
+
+
+
+
+
+full_site_lulc_and_storage_cr_filtrate <- read_csv("Output_for_Files/full_site_lulc_and_storage_cr_filtration.csv")
+
+full_site_lulc_and_storage_cb_filtrate <- read_csv("Output_for_Files/full_site_lulc_and_storage_cb_filtration.csv")
+
+full_site_lulc_and_storage_tr109_filtrate <- read_csv("Output_for_Files/full_site_lulc_and_storage_tr109_filtration.csv")
+
+full_site_lulc_and_storage_tr104_filtrate <- read_csv("Output_for_Files/full_site_lulc_and_storage_tr104_filtration.csv")
+
+full_site_lulc_and_storage_sb_filtrate <- read_csv("Output_for_Files/full_site_lulc_and_storage_sb_filtration.csv")
+
+
+SEM_PRECIP_2022 <- read_csv("Input_Files/SEM_PRECIP_2022.CSV")
+
+full_basin_lulc <-read.csv("./Output_for_Files/lulc_for_full_basins.csv")
+
+
+full_basin_lulc <- full_basin_lulc%>%
+  mutate(Year = year, Site = toupper(site_name))%>%
+  dplyr::select(Year, Site, updated_gridcode, total_area, area_whole_basin)
+
+full_basin_lulc <- pivot_wider(full_basin_lulc, names_from = updated_gridcode, values_from = total_area)
+
+full_basin_lulc <- full_basin_lulc %>%
+  mutate(basin_area_20 = `20`, basin_area_30 = `30`, basin_area_40 = `40`, basin_area_70 = `70`)%>%
+  dplyr::select(basin_area_20, basin_area_30, basin_area_40, basin_area_70, area_whole_basin, Year, Site)
+all_bmp_type_yearly_summary <- all_bmp_type_yearly_summary%>%
+  dplyr::mutate(Site = toupper(site), Year = as.numeric(year))
+
+sem_all_bmp_summary <- left_join(all_bmp_type_yearly_summary, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+
+all_bmp_type_yearly_summary <- all_bmp_type_yearly_summary%>%
+  dplyr::mutate(Site = toupper(site), Year = as.numeric(year))
+
+infiltration_bmp_type_yearly_summary <- infiltration_bmp_type_yearly_summary %>%
+  dplyr::mutate(Site = toupper(site), Year = as.numeric(year))
+
+sem_infiltate_bmp_summary<-left_join(infiltration_bmp_type_yearly_summary, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+```
+
+
+```{r}
+
+storage_landuse_all_bmps <- bind_rows(full_site_lulc_and_storage_cb, full_site_lulc_and_storage_cr, full_site_lulc_and_storage_sb, full_site_lulc_and_storage_tr104, full_site_lulc_and_storage_tr109)%>%
+  mutate(Year = year, Site = toupper(site))
+  
+
+
+storage_landuse_filtrate_bmps <- bind_rows(full_site_lulc_and_storage_cb_filtrate, full_site_lulc_and_storage_cr_filtrate, full_site_lulc_and_storage_sb_filtrate, full_site_lulc_and_storage_tr104_filtrate, full_site_lulc_and_storage_tr109_filtrate)%>%
+  mutate(Year = year, Site = toupper(site))
+
+
+storage_landuse_infiltrate_bmps <- bind_rows(full_site_lulc_and_storage_cb_infiltrate, full_site_lulc_and_storage_cr_infiltrate, full_site_lulc_and_storage_sb_infiltrate, full_site_lulc_and_storage_tr104_infiltrate, full_site_lulc_and_storage_tr109_infiltrate)%>%
+  mutate(Year = year, Site = toupper(site))
+
+
+SEM_storage_landuse_all_bmps <- full_join(storage_landuse_all_bmps, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+SEM_storage_landuse_all_bmps <- full_join(SEM_storage_landuse_all_bmps, full_basin_lulc, by = c("Year", "Site"))
+
+
+
+SEM_storage_landuse_infiltrate_bmps <- full_join(storage_landuse_infiltrate_bmps, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+SEM_storage_landuse_infiltrate_bmps <- full_join(SEM_storage_landuse_infiltrate_bmps, full_basin_lulc, by = c("Year", "Site"))
+
+
+
+SEM_storage_landuse_filtrate_bmps <- full_join(storage_landuse_filtrate_bmps, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+SEM_storage_landuse_filtrate_bmps <- full_join(SEM_storage_landuse_filtrate_bmps, full_basin_lulc, by = c("Year", "Site"))
+
+
+
+SEM_storage_landuse_all_bmps <- SEM_storage_landuse_all_bmps%>%
+  mutate(percent_treated_20 = (`20`/basin_area_20)*100, 
+         percent_treated_20_whole_area = (`20`/area_whole_basin)*100, 
+         percent_treated_30 =(`30`/basin_area_30)*100, 
+         percent_treated_30_whole_area = (`30`/area_whole_basin)*100, 
+         percent_treated_40 = (`40`/basin_area_40)*100, 
+         percent_treated_40_whole_area = (`40`/area_whole_basin)*100, 
+         percent_treated_70 =(`70`/basin_area_70)*100, 
+         percent_treated_70_whole_area = (`70`/area_whole_basin)*100)
+
+SEM_storage_landuse_infiltrate_bmps <- SEM_storage_landuse_infiltrate_bmps%>%
+  mutate(percent_treated_20 = (`20`/basin_area_20)*100, 
+         percent_treated_20_whole_area = (`20`/area_whole_basin)*100, 
+         percent_treated_30 =(`30`/basin_area_30)*100, 
+         percent_treated_30_whole_area = (`30`/area_whole_basin)*100, 
+         percent_treated_40 = (`40`/basin_area_40)*100, 
+         percent_treated_40_whole_area = (`40`/area_whole_basin)*100, 
+         percent_treated_70 =(`70`/basin_area_70)*100, 
+         percent_treated_70_whole_area = (`70`/area_whole_basin)*100)
+
+
+SEM_storage_landuse_filtrate_bmps <- SEM_storage_landuse_filtrate_bmps%>%
+  mutate(percent_treated_20 = (`20`/basin_area_20)*100, 
+         percent_treated_20_whole_area = (`20`/area_whole_basin)*100, 
+         percent_treated_30 =(`30`/basin_area_30)*100, 
+         percent_treated_30_whole_area = (`30`/area_whole_basin)*100, 
+         percent_treated_40 = (`40`/basin_area_40)*100, 
+         percent_treated_40_whole_area = (`40`/area_whole_basin)*100, 
+         percent_treated_70 =(`70`/basin_area_70)*100, 
+         percent_treated_70_whole_area = (`70`/area_whole_basin)*100)
+
+
+```
+
+# All BMP Plots
+
+```{r}
+tr_109_tr_104_sem_bmp_summary <- sem_infiltate_bmp_summary %>%
+  dplyr::filter(Site %in% c("TR104", "TR109"))
+
+options(scipen=999)
+
+p1<-ggplot(tr_109_tr_104_sem_bmp_summary, aes(x = percent_20_treated, y = IBI, color = Site)) + geom_point()+ geom_smooth(method = "lm")+ labs(x = "Percent Impervious Treated", y = "") + theme_economist()+ theme(legend.position = "none")+ theme(axis.title.x = element_text(vjust=-1))
+p2<-ggplot(tr_109_tr_104_sem_bmp_summary, aes(x = `20`, y = IBI, color = Site)) + geom_point()+ geom_smooth(method = "lm") + labs(x = "Impervious Area Treated", y = "IBI") + theme_economist()+ theme(legend.position = "none") + theme(axis.title.y = element_text(vjust=3)) + theme(axis.title.x = element_text(vjust=-1))
+p3<-ggplot(tr_109_tr_104_sem_bmp_summary, aes(x = untreated_20, y = IBI, color = Site)) + geom_point()+ geom_smooth(method = "lm")+ labs(x = "Impervious Area Untreated", y = "") + theme_economist() + theme(legend.position = "none")+ theme(axis.title.x = element_text(vjust=-1)) 
+
+plot_grid(p1,p2,p3, ncol = 1, align = "h" )
+
+ggplot(SEM_storage_landuse_all_bmps%>%filter(percent_treated_20_whole_area>0), aes(x = percent_treated_20_whole_area, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(sem_all_bmp_summary%>%filter(percent_30_treated>0), aes(x = percent_30_treated, y = IBI, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_all_bmps%>%filter(percent_treated_30_whole_area>0), aes(x = percent_treated_30_whole_area, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+```
+
+```{r}
+ggplot(SEM_storage_landuse_all_bmps%>%filter(percent_treated_20>0), aes(x = percent_treated_20, y = taxa.rich, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(data = SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_30>0& Site %in% c("TR104", "TR109")), aes(x = percent_treated_30, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(SEM_storage_landuse_all_bmps%>%filter(percent_treated_30>0), aes(x = percent_treated_30, y = taxa.rich, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_all_bmps%>%filter(percent_treated_30_whole_area>0), aes(x = percent_treated_30_whole_area, y = taxa.rich, fill = Site)) + geom_point() + geom_smooth(method = "lm")
+
+```
+
+```{r}
+ggplot(SEM_storage_landuse_all_bmps%>%filter(percent_treated_20>0), aes(x = percent_treated_20, y = per.ept, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_all_bmps%>%filter(percent_treated_20_whole_area>0), aes(x = percent_treated_20_whole_area, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(SEM_storage_landuse_all_bmps%>%filter(percent_treated_30>0), aes(x = percent_treated_30, y = per.ept, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_all_bmps%>%filter(percent_treated_30_whole_area>0), aes(x = percent_treated_30_whole_area, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+```
+
+# Filtration BMP Plots
+```{r}
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_20>0), aes(x = percent_treated_20, y = IBI, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_20_whole_area>0), aes(x = percent_treated_20_whole_area, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_30>0), aes(x = percent_treated_30, y = IBI, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_30_whole_area>0), aes(x = percent_treated_30_whole_area, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+```
+
+```{r}
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_20>0), aes(x = percent_treated_20, y = taxa.rich, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_20_whole_area>0), aes(x = percent_treated_20_whole_area, y = taxa.rich, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_30>0), aes(x = percent_treated_30, y = taxa.rich, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_30_whole_area>0), aes(x = percent_treated_30_whole_area, y = taxa.rich, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+```
+
+```{r}
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_20>0), aes(x = percent_treated_20, y = per.ept, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_20_whole_area>0), aes(x = percent_treated_20_whole_area, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_30>0), aes(x = percent_treated_30, y = per.ept, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_filtrate_bmps%>%filter(percent_treated_30_whole_area>0), aes(x = percent_treated_30_whole_area, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+```
+
+# Infiltration BMP Plots
+
+```{r}
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_20>0), aes(x = percent_treated_20, y = IBI, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_20_whole_area>0), aes(x = percent_treated_20_whole_area, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_30>0), aes(x = percent_treated_30, y = IBI, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_30_whole_area>0), aes(x = percent_treated_30_whole_area, y = IBI, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+```
+
+```{r}
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_20>0), aes(x = percent_treated_20, y = taxa.rich, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_20_whole_area>0), aes(x = percent_treated_20_whole_area, y = taxa.rich, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_30>0), aes(x = percent_treated_30, y = taxa.rich, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_30_whole_area>0), aes(x = percent_treated_30_whole_area, y = taxa.rich, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+```
+
+```{r}
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_20>0), aes(x = percent_treated_20, y = per.ept, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_20_whole_area>0), aes(x = percent_treated_20_whole_area, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_30>0), aes(x = percent_treated_30, y = per.ept, color = Site)) + geom_point()+ geom_smooth(method = "lm")
+
+ggplot(SEM_storage_landuse_infiltrate_bmps%>%filter(percent_treated_30_whole_area>0), aes(x = percent_treated_30_whole_area, y = per.ept, color = Site)) + geom_point() + geom_smooth(method = "lm")
+
+```
+
+# Plot
+```{r}
+
+ggplot(SEM_storage_landuse_all_bmps%>%filter(Site %in% c("TR109", "TR104")), aes(x = Year, y = IBI, color = Site)) + geom_line()
+
+ggplot(SEM_storage_landuse_all_bmps%>%filter(Site %in% c("TR109", "TR104")), aes(x = Year, y = taxa.rich, color = Site)) + geom_line()
+
+ggplot(SEM_storage_landuse_all_bmps%>%filter(Site %in% c("TR109", "TR104")), aes(x = Year, y = per.ept, color = Site)) + geom_line()
+
+
+```
+
+```{r}
+tr104_109_all <- SEM_storage_landuse_all_bmps %>%
+  filter(Site %in% c("TR109", "TR104"))%>%
+  mutate(treatment_type = "All")
+
+tr104_109_filtrate <- SEM_storage_landuse_filtrate_bmps%>%
+  filter(Site %in% c("TR109", "TR104"))%>%
+  mutate(treatment_type = "Filtration")
+
+tr104_109_infiltrate <- SEM_storage_landuse_infiltrate_bmps%>%
+  filter(Site %in% c("TR109", "TR104"))%>%
+  mutate(treatment_type = "Infiltration")
+
+comparing_treatment <- rbind(tr104_109_all, tr104_109_filtrate, tr104_109_infiltrate)
+
+
+ggplot(comparing_treatment, aes(x = Year, y = percent_treated_30, linetype = Site, color = treatment_type)) + geom_line() + labs(x="", y = "Percent Barren Treated", title = "TR-104 and TR-109", color = "Treatment Type")+xlim(2009,2020)
+
+ggplot(comparing_treatment, aes(x = Year, y = percent_treated_20, linetype = Site, color = treatment_type)) + geom_line() + labs(x="", y = "Percent Impervious Treated", title = "TR-104 and TR-109")+xlim(2009,2020)+theme(legend.position = "")
+
+
+ggplot(comparing_treatment, aes(x = Year, y = percent_treated_30_whole_area, linetype = Site, color = treatment_type)) + geom_line()
+
+ggplot(comparing_treatment, aes(x = Year, y = percent_treated_20_whole_area, linetype = Site, color = treatment_type)) + geom_line()
+
+
+full_storage_tr109 <- read.csv("./Output_for_Files/full_storageTR109.csv")
+full_storage_tr104 <- read.csv("./Output_for_Files/full_storageTR104.csv")
+
+full_storage_104_109 <- rbind(full_storage_tr104, full_storage_tr109)
+
+
+ggplot(tr104_109_all, aes(x = Year, y = storage, color = Site)) + geom_line()
+
+ggplot(full_storage_104_109, aes(x = year, y = total_storage, color = Site)) + geom_line()
+```
+
+
+```{r}
+
+storage_sem <- full_join(sem_all_bmp_summary, full_storage_sem, 76)
+
+library(corrplot)
+
+Correlation_ds <- storage_sem[,c(2,5:22,25:30, 78)]%>%
+  na.omit()%>%
+  dplyr::filter(site %in% c("tr109"))%>%
+  dplyr::select(-c(site, Site))
+
+plot <- cor(Correlation_ds, method = "spearman")
+
+corrplot(plot, type = "lower")
+
+all_bmp <- lm(per.ept~percent_treated_30,tr104_109_all)
+summary(all_bmp)
+
+just_104_all <- tr104_109_all %>%
+  filter(Site == "TR104")
+
+all_bmp_104 <- lm(per.ept~percent_treated_20,just_104_all)
+summary(all_bmp_104)
+
+just_109_all <- tr104_109_all %>%
+  filter(Site == "TR109")
+
+all_bmp_109 <- lm(per.ept~percent_treated_30,just_109_all)
+summary(all_bmp_109)
+
+
+```
+
+```{r}
+all_bmp <- lm(per.ept~percent_treated_30,tr104_109_infiltrate)
+summary(all_bmp)
+
+just_104_all <- tr104_109_infiltrate %>%
+  filter(Site == "TR104")
+
+all_bmp_104 <- lm(per.ept~percent_treated_30,just_104_all)
+summary(all_bmp_104)
+
+just_109_all <- tr104_109_infiltrate %>%
+  filter(Site == "TR109")
+
+all_bmp_109 <- lm(per.ept~percent_treated_30,just_109_all)
+summary(all_bmp_109)
+```
+
+```{r}
+all_bmp <- lm(per.ept~percent_treated_30,tr104_109_filtrate)
+summary(all_bmp)
+
+just_104_all <- tr104_109_filtrate %>%
+  filter(Site == "TR104")
+
+all_bmp_104 <- lm(per.ept~percent_treated_30,just_104_all)
+summary(all_bmp_104)
+
+just_109_all <- tr104_109_filtrate %>%
+  filter(Site == "TR109")
+
+all_bmp_109 <- lm(per.ept~percent_treated_30,just_109_all)
+summary(all_bmp_109)
+```
+
+```{r}
+
+all_bmp <- lm(Flash~storage,tr104_109_all)
+summary(all_bmp)
+
+just_104_all <- tr104_109_all %>%
+  filter(Site == "TR104")
+
+all_bmp_104 <- lm(Flash~storage,just_104_all)
+summary(all_bmp_104)
+
+just_109_all <- tr104_109_all %>%
+  filter(Site == "TR109")
+
+all_bmp_109 <- lm(Flash~storage,just_109_all)
+summary(all_bmp_109)
+```
+
+```{r}
+full_storage_sem <- full_storage_104_109%>%
+  mutate(Year = year)
+
+full_storage_sem <- full_join(full_storage_sem, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+ggplot(full_storage_sem%>%filter(Site %in% c("TR104", "TR109")& total_storage>0), aes(x = total_storage, y = per.ept, color = Site)) + geom_point()+labs(x = "Total Storage (ft^3)") + geom_smooth(method = "lm") + theme_economist()+ theme(legend.position = "bottom") + theme(axis.title.y = element_text(vjust=3)) + theme(axis.title.x = element_text(vjust=-2)) +labs(y="Percent EPT", title = "Relationship between Storage and Percent EPT")
+
+ggplot(full_storage_sem%>%filter(Site %in% c("TR104", "TR109")& total_storage>0), aes(x = total_storage, y = taxa.rich, color = Site)) + geom_point()+labs(x = "Total Storage (ft^3)") + geom_smooth(method = "lm") + theme_economist()+ theme(legend.position = "bottom") + theme(axis.title.y = element_text(vjust=3)) + theme(axis.title.x = element_text(vjust=-2)) +labs(y="Taxa Richness", title = "Relationship between Storage and Taxa Richness")
+
+ggplot(full_storage_sem%>%filter(Site %in% c("TR104", "TR109")& total_storage>0), aes(x = total_storage, y = IBI, color = Site)) + geom_point()+labs(x = "Total Storage (ft^3)") + geom_smooth(method = "lm") + theme_economist()+ theme(legend.position = "bottom") + theme(axis.title.y = element_text(vjust=3)) + theme(axis.title.x = element_text(vjust=-2)) +labs(y="IBI", title = "Relationship between Storage and IBI")
+
+
+ggplot(full_storage_sem%>%filter(Site %in% c("TR104", "TR109")& total_storage>0), aes(x = total_storage, y = Flash, color = Site)) + geom_point()+labs(x = "Total Storage (ft^3)") + geom_smooth(method = "lm") + theme_economist()+ theme(legend.position = "bottom") + theme(axis.title.y = element_text(vjust=3)) + theme(axis.title.x = element_text(vjust=-2)) +labs(y="Stream Flashiness Index", title = "Relationship between Storage and Stream Flashiness")
+
+```
+
+```{r}
+library(tidyverse)
+full_storage_sem_pre_post <- full_storage_sem %>%
+  dplyr::filter(Site %in% c("TR104", "TR109"))%>%
+  dplyr::mutate(total_storage = ifelse(is.na(total_storage)==T, 0, total_storage))%>%
+  dplyr::mutate(pre_post_construct = case_when( Site == "TR104" & total_storage < 6871770  ~ "Storage Not Fully Implemented" , Site == "TR104" & total_storage >= 6871770 ~ "Storage Fully Implemented", Site == "TR109" & total_storage < 6356810 ~"Storage Not Fully Implemented", Site == "TR109" & total_storage >=6356810 ~"Storage Fully Implemented"))%>%
+  dplyr::mutate(pre_post_construct = ordered(pre_post_construct, levels = c("Storage Not Fully Implemented", "Storage Fully Implemented")))%>%filter(is.na(Flash)==F)
+  
+give.n <- function(x){
+  return(c(y = median(x)*1.3, label = max(x))) 
+  # experiment with the multiplier to find the perfect position
+}
+ggplot(full_storage_sem_pre_post, aes(y = Flash, color = Site, x = pre_post_construct )) + geom_boxplot()+
+     stat_summary(fun.data = give.n, geom = "text",position = position_dodge(width = 0.75)) + theme_economist() + labs(x = "", y = "Stream Flashiness Index")+ theme(axis.title.y = element_text(vjust=2.5))
+
+```
