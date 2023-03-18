@@ -1,0 +1,164 @@
+---
+title: "Rainfall_Data"
+author: "Kaitlyn Elliott"
+date: "2023-02-01"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+#Pulling NWIS Data 15-minute Precip 
+
+```{r}
+
+library(tidyverse)
+library(ggplot2)
+library(dataRetrieval)
+library(plotly)
+library(lubridate)
+
+# sites to pull 07344484, 12118400, 340742117161701, and 391328077185901
+
+
+```
+
+
+```{r}
+
+#nwis precip is in inches
+
+precip_dallas <- readNWISuv(siteNumbers = "07344484",
+             parameterCd = "00045",
+             startDate = "2005-01-01",
+             endDate = "2020-12-31")
+
+precip_seattle <- readNWISuv(siteNumbers = "12118400",
+             parameterCd = "00045",
+             startDate = "2005-01-01",
+             endDate = "2020-12-31")
+    
+
+precip_los_angeles <- readNWISuv(siteNumbers = "340742117161701",
+             parameterCd = "00045",
+             startDate = "2005-01-01",
+             endDate = "2020-12-31")
+
+precip_clarksburg <- readNWISuv(siteNumbers = "391328077185901",
+             parameterCd = "00045",
+             startDate = "2005-01-01",
+             endDate = "2020-12-31")
+
+precip_clarksburg_daily <- precip_clarksburg %>%
+  dplyr::mutate(year = year(dateTime), day = day(dateTime), month = month(dateTime))%>%
+  group_by(month, day, year)%>%
+  dplyr::summarise(daily_rainfall = sum(X_00045_00000, na.rm = T))%>%
+  filter(daily_rainfall>0)
+
+daily_max_clarks <- max(precip_clarksburg_daily$daily_rainfall, na.rm = T)
+daily_mean_clarks <- mean(precip_clarksburg_daily$daily_rainfall, na.rm = T)
+daily_median_clarks <- median(precip_clarksburg_daily$daily_rainfall, na.rm = T)
+
+precip_dallas_daily <- precip_dallas %>%
+  dplyr::mutate(year = year(dateTime), day = day(dateTime), month = month(dateTime))%>%
+  group_by(month, day, year)%>%
+  dplyr::summarise(daily_rainfall = sum(X_00045_00000, na.rm = T))%>%
+  filter(daily_rainfall>0)
+
+daily_max_dallas <- max(precip_dallas_daily$daily_rainfall, na.rm = T)
+daily_mean_dallas <- mean(precip_dallas_daily$daily_rainfall, na.rm = T)
+
+
+precip_seattle_daily <- precip_seattle %>%
+  dplyr::mutate(year = year(dateTime), day = day(dateTime), month = month(dateTime))%>%
+  group_by(month, day, year)%>%
+  dplyr::summarise(daily_rainfall = sum(X_00045_00000, na.rm = T))%>%
+  filter(daily_rainfall>0)
+
+daily_max_seattle <- max(precip_seattle_daily$daily_rainfall, na.rm = T)
+daily_mean_seattle <- mean(precip_seattle_daily$daily_rainfall, na.rm = T)
+
+
+
+precip_los_angeles_daily <- precip_los_angeles %>%
+  dplyr::mutate(year = year(dateTime), day = day(dateTime), month = month(dateTime))%>%
+  group_by(month, day, year)%>%
+  dplyr::summarise(daily_rainfall = sum(X_00045_00000, na.rm = T))%>%
+  filter(daily_rainfall>0)
+
+daily_max_los_angeles <- max(precip_los_angeles_daily$daily_rainfall, na.rm = T)
+daily_mean_los_angeles <- mean(precip_los_angeles_daily$daily_rainfall, na.rm = T)
+
+
+
+```
+
+
+# Viewing rainfall to pick out events to use 
+
+```{r}
+
+ggplotly(ggplot(precip_clarksburg, aes(x = dateTime, y = X_00045_00000))+geom_line())
+
+ggplotly(ggplot(precip_los_angeles, aes(x = dateTime, y = X_00045_00000))+geom_line())
+
+ggplotly(ggplot(precip_dallas, aes(x = dateTime, y = X_00045_00000))+geom_line())
+
+ggplotly(ggplot(precip_seattle, aes(x = dateTime, y = X_00045_00000))+geom_line())
+
+
+```
+
+
+# Picking out typical events
+
+```{r}
+precip_clarksburg_typical_event <- precip_clarksburg %>%
+  filter(dateTime>"2019-10-21" & dateTime<"2019-10-23")%>%
+  dplyr::mutate(rain = X_00045_00000/12)%>% # inches to feet 
+  dplyr::select(rain)
+
+precip_dallas_typical_event <- precip_dallas %>%
+  filter(dateTime>"2020-05-23" & dateTime<"2020-05-25")%>%
+  dplyr::mutate(rain = X_00045_00000/12)%>% # inches to feet 
+  dplyr::select(rain)
+
+precip_los_angeles_typical_event <- precip_los_angeles %>%
+  filter(dateTime>"2019-05-18" & dateTime<"2019-05-20")%>%
+  dplyr::mutate(rain = X_00045_00000/12)%>% # inches to feet 
+  dplyr::select(rain)
+
+precip_seattle_typical_event <- precip_seattle %>%
+  filter(dateTime>"2015-12-09" & dateTime<"2015-12-11")%>%
+  dplyr::mutate(rain = X_00045_00000/12)%>% # inches to feet 
+  dplyr::select(rain)
+
+```
+
+# Picking out extreme events
+
+```{r}
+
+precip_clarksburg_extreme_event <- precip_clarksburg %>%
+  filter(dateTime>"2018-07-21" & dateTime<"2018-07-23")%>%
+  dplyr::mutate(rain = X_00045_00000/12)%>% # inches to feet 
+  dplyr::select(rain)
+
+precip_dallas_extreme_event <- precip_dallas %>%
+  filter(dateTime>"2020-12-30" & dateTime<"2021-01-01")%>%
+  dplyr::mutate(rain = X_00045_00000/12)%>% # inches to feet 
+  dplyr::select(rain)
+
+precip_los_angeles_extreme_event <- precip_los_angeles %>%
+  filter(dateTime>"2010-12-21" & dateTime<"2010-12-23")%>%
+  dplyr::mutate(rain = X_00045_00000/12)%>% # inches to feet 
+  dplyr::select(rain)
+
+precip_seattle_extreme_event <- precip_seattle %>%
+  filter(dateTime>"2015-11-13" & dateTime<"2015-11-15")%>%
+  dplyr::mutate(rain = X_00045_00000/12)%>% # inches to feet 
+  dplyr::select(rain)
+
+
+
+```
+
