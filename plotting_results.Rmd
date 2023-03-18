@@ -28,6 +28,12 @@ sem_lulc_storage_more_info <- read.csv("./Output_for_Files/sem_lulc_storage_more
 
 ```
 
+```{r}
+
+ggplot(SEM_PRECIP_2022%>%filter(Year>2008), aes(x = Year)) + geom_line(aes(y = IBI), color = "red")+ geom_line(aes(y = taxa.rich), color = "darkgreen")+ geom_line(aes(y = per.ept), color = "blue") + facet_wrap("Site", ncol = 1) + theme_economist() + theme(axis.title.y = element_text(vjust=3)) +labs(x = "", y = "Benthic Variable") 
+
+```
+
 # Plots of storage
 
 ```{r}
