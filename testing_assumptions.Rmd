@@ -13,6 +13,8 @@ library(plotly)
 library(climateR)
 library(tidyverse)
 library(dataRetrieval)
+library(sf)
+library(sp)
 
 site_info <- data.frame(site = c("Dallas", "Seattle", "Clarksburg", "Los Angeles"), Long = c(-96.80889100, -122.3351600, -77.2794200, -118.24368400), Lat = c(32.7791600, 47.6080100, 39.2387100, 34.05223400))
 
@@ -82,3 +84,64 @@ ggplotly(ggplot() + geom_line(data = precip_clarksburg, aes(x = dateTime, y = X_
 ```
 
 If you can say drainage area to peak flow is proportional then for an area of 3.53 miles^2 taking 6 hours a 0.023088523 miles^2 (one of the largest BMP drainage areas) would take around 2 minutes. 
+
+
+```{r}
+
+site_info <- data.frame(site = c("Dallas", "Seattle", "Clarksburg", "Los Angeles"), Long = c(-96.80889100, -122.3351600, -77.2794200, -118.24368400), Lat = c(32.7791600, 47.6080100, 39.2387100, 34.05223400))
+
+sf_use_s2(FALSE)
+pts <- st_as_sf(site_info, coords = c("Long", "Lat"), crs = 4326)
+
+
+precip_Dallas <- read.csv("./PRISM_Dallas.csv") %>%
+  mutate(site = "Dallas")
+precip_Seattle <- read.csv("./PRISM_Seattle.csv") %>%
+  mutate(site = "Seattle")
+precip_Clarksburg <- read.csv("./PRISM_Clarksburg.csv") %>%
+  mutate(site = "Clarksburg")
+precip_Los_Angles <- read.csv("./PRISM_Los_Angeles.csv") %>%
+  mutate(site = "Los Angeles")
+
+All_Site_Precip <- rbind(precip_Clarksburg, precip_Dallas, precip_Los_Angles, precip_Seattle) %>%
+  mutate(Date = as.Date(Date, f = "%m/%d/%Y"))
+
+All_Site_Precip_rain_days_only <- All_Site_Precip %>%
+  filter(ppt..mm. > 0)
+
+yearly <- All_Site_Precip %>%
+  mutate(year = year(Date))%>%
+  group_by(year, site)%>%
+  summarise(total_precip = sum(ppt..mm.))
+
+all_precip_max_average_daily <- All_Site_Precip_rain_days_only %>%
+  group_by(site) %>%
+  summarise(max_precip = max(ppt..mm.),
+            mean_precip = mean(ppt..mm.))
+  
+
+
+ggplot(All_Site_Precip_rain_days_only, aes(x =ppt..mm.)) + facet_wrap("site") + geom_histogram(bins = 100, color = "red") + xlim(0,75)
+
+ggplot(precip_Seattle, aes(x = ppt..mm.)) + geom_histogram(bins = 100, color = "red") + xlim(0,75) + ylim(0, 1250) + labs(x = "Precip (mm)", y = "Count", title = "Seattle, Washington")
+
+ggplot(yearly, aes(x = year, y = total_precip, color = site)) + geom_line() + geom_smooth(method = "lm", se = FALSE) + labs(x = "", y = "Total Precip (mm)", color = "Site", title = "Trends in Rainfall Over Time")
+library(maps)
+
+states <- st_as_sf(map(database = "state", plot = TRUE, fill = TRUE, col = "white"))
+
+ggplot() + geom_sf(data = states) + geom_sf(data = pts, size = 3)
+
+
+summarize_yearly <- yearly %>%
+  group_by(site) %>%
+  summarise(mean = mean(total_precip))
+
+
+ks.test(precip_Clarksburg$ppt..mm., precip_Los_Angles$ppt..mm.)
+# overlay clarksburg histogram over the other cities have a map with points and histograms
+
+#could I standardize the data by dividing the sites by the total rainfall and then compare distributions?
+
+
+```
