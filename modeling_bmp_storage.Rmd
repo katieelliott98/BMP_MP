@@ -7,10 +7,22 @@ editor_options:
   chunk_output_type: console
 ---
 
+```{r}
+
+library(tidyverse)
+library(sf)
+library(sp)
+library(raster)
+library(ggthemes)
+library(cowplot)
+library(grid)
+library(gridExtra)
+
+```
 
 ```{r}
-bmp_full <- read.csv("BMP_2020_COMPARE.csv")
-new_stores <- read.csv("full_SEQNO_missing_stores_cf_bmp.csv")
+bmp_full <- read.csv("./Input_Files/BMP_2020_COMPARE.csv")
+new_stores <- read.csv("./Input_Files/full_SEQNO_missing_stores_cf_bmp.csv")
 
 new_stores$Stores_cf <- new_stores$Stores
 new_stores$STRUC_DTAL <- new_stores$STRUC_DTAL.x
@@ -23,56 +35,119 @@ bmp_full <- bmp_full %>%
   filter(is.na(ASSET)==FALSE)%>%
   dplyr::select(ASSET, Stores_cf)
 
+deliniate_lulc_info_tr104_2010 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2010.csv")
+deliniate_lulc_info_tr104_2011 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2011.csv")
+deliniate_lulc_info_tr104_2012 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2012.csv")
+deliniate_lulc_info_tr104_2013 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2013.csv")
+deliniate_lulc_info_tr104_2014 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2014.csv")
+deliniate_lulc_info_tr104_2015 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2015.csv")
+deliniate_lulc_info_tr104_2016 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2016.csv")
+deliniate_lulc_info_tr104_2017 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2017.csv")
+deliniate_lulc_info_tr104_2018 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2018.csv")
+deliniate_lulc_info_tr104_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr104_2019.csv")
 
-deliniate_lulc_info_tr104_2011 <- read_csv("deliniate_lulc_info_tr104_2011.csv")
-deliniate_lulc_info_tr104_2013 <- read_csv("deliniate_lulc_info_tr104_2013.csv")
-deliniate_lulc_info_tr104_2015 <- read_csv("deliniate_lulc_info_tr104_2015.csv")
-deliniate_lulc_info_tr104_2017 <- read_csv("deliniate_lulc_info_tr104_2017.csv")
-deliniate_lulc_info_tr104_2018 <- read_csv("deliniate_lulc_info_tr104_2018.csv")
-deliniate_lulc_info_tr104_2021 <- read_csv("deliniate_lulc_info_tr104_2021.csv")
-
-tr104_full_ds <- rbind(deliniate_lulc_info_tr104_2011, deliniate_lulc_info_tr104_2013, deliniate_lulc_info_tr104_2015, deliniate_lulc_info_tr104_2017, deliniate_lulc_info_tr104_2018, deliniate_lulc_info_tr104_2021)
+tr104_full_ds <- rbind(deliniate_lulc_info_tr104_2010, deliniate_lulc_info_tr104_2011, deliniate_lulc_info_tr104_2012, deliniate_lulc_info_tr104_2013, deliniate_lulc_info_tr104_2014, deliniate_lulc_info_tr104_2015, deliniate_lulc_info_tr104_2016, deliniate_lulc_info_tr104_2017, deliniate_lulc_info_tr104_2018, deliniate_lulc_info_tr104_2019)
 
 tr104_full_ds_stores <- left_join(tr104_full_ds, bmp_full)
 
 
 
 
-deliniate_lulc_info_tr109_2011 <- read_csv("deliniate_lulc_info_tr109_2011.csv")
-deliniate_lulc_info_tr109_2013 <- read_csv("deliniate_lulc_info_tr109_2013.csv")
-deliniate_lulc_info_tr109_2015 <- read_csv("deliniate_lulc_info_tr109_2015.csv")
-deliniate_lulc_info_tr109_2017 <- read_csv("deliniate_lulc_info_tr109_2017.csv")
-deliniate_lulc_info_tr109_2018 <- read_csv("deliniate_lulc_info_tr109_2018.csv")
-deliniate_lulc_info_tr109_2021 <- read_csv("deliniate_lulc_info_tr109_2021.csv")
+deliniate_lulc_info_tr109_2010 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2010.csv")
+deliniate_lulc_info_tr109_2011 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2011.csv")
+deliniate_lulc_info_tr109_2012 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2012.csv")
+deliniate_lulc_info_tr109_2013 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2013.csv")
+deliniate_lulc_info_tr109_2014 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2014.csv")
+deliniate_lulc_info_tr109_2015 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2015.csv")
+deliniate_lulc_info_tr109_2016 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2016.csv")
+deliniate_lulc_info_tr109_2017 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2017.csv")
+deliniate_lulc_info_tr109_2018 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2018.csv")
+deliniate_lulc_info_tr109_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_tr109_2019.csv")
 
-tr109_full_ds <- rbind(deliniate_lulc_info_tr109_2011, deliniate_lulc_info_tr109_2013, deliniate_lulc_info_tr109_2015, deliniate_lulc_info_tr109_2017, deliniate_lulc_info_tr109_2018, deliniate_lulc_info_tr109_2021)
+tr109_full_ds <- rbind(deliniate_lulc_info_tr109_2010, deliniate_lulc_info_tr109_2011, deliniate_lulc_info_tr109_2012, deliniate_lulc_info_tr109_2013, deliniate_lulc_info_tr109_2014, deliniate_lulc_info_tr109_2015, deliniate_lulc_info_tr109_2016, deliniate_lulc_info_tr109_2017, deliniate_lulc_info_tr109_2018, deliniate_lulc_info_tr109_2019)
 
 tr109_full_ds_stores <- left_join(tr109_full_ds, bmp_full)
 
 
-tr104_bmp_deliniated <- st_read(file.path("./arcfile/deliniate_tr104.shp"))
+tr104_bmp_deliniated <- st_read(file.path("./Input_Files/deliniate_tr104.shp"))
 tr104_bmp_deliniated <- st_transform(tr104_bmp_deliniated, 2248)
-tr109_bmp_deliniated <-st_read(file.path("./arcfile/deliniate_tr109.shp"))
+tr109_bmp_deliniated <-st_read(file.path("./Input_Files/deliniate_tr109.shp"))
 tr109_bmp_deliniated <- st_transform(tr109_bmp_deliniated, 2248)
 tr109_bmp_deliniated$Area_m2 <- "NA"
-cr_bmp_deliniated <- st_read(file.path("./arcfile/deliniate_cr.shp"))
-cr_bmp_deliniated <- st_transform(cr_bmp_deliniated, 2248)
-cb_bmp_deliniated <- st_read(file.path("./arcfile/deliniate_cb.shp"))
-cb_bmp_deliniated <- st_transform(cb_bmp_deliniated, 2248)
-sb_bmp_deliniated <- st_read(file.path("./arcfile/deliniate_sb.shp"))
-sb_bmp_deliniated <- st_transform(sb_bmp_deliniated, 2248)
 
-stormwater_tr109 <- st_read(file.path("./arcfile/stormwater_tr109.shp"))
+
+stormwater_tr109 <- st_read(file.path("./Input_Files/stormwater_tr109.shp"))
 stormwater_tr109 <- st_transform(stormwater_tr109, 2248) 
-stormwater_tr104 <- st_read(file.path("./arcfile/stormwater_tr104.shp")) 
+stormwater_tr104 <- st_read(file.path("./Input_Files/stormwater_tr104.shp")) 
 stormwater_tr104 <- st_transform(stormwater_tr104, 2248)
 stormwater_tr104 <- stormwater_tr104[,c(1:32,107)]
-stormwater_cr <- st_read(file.path("./arcfile/stormwater_cr.shp")) 
-stormwater_cr <- st_transform(stormwater_cr, 2248)
-stormwater_cb <- st_read(file.path("./arcfile/stormwater_cb.shp")) 
-stormwater_cb <- st_transform(stormwater_cb, 2248)
-stormwater_sb <- st_read(file.path("./arcfile/stormwater_sb.shp")) 
-stormwater_sb <- st_transform(stormwater_sb, 2248)
+
+
+
+tr109 <- st_read(file.path("./Input_Files/tr109_basin.shp")) 
+tr109 <- st_transform(tr109, 2248)
+
+tr104 <- st_read(file.path("./Input_Files/tr104_basin.shp"))
+tr104 <- st_transform(tr104, 2248)
+
+
+```
+
+```{r}
+deliniate_lulc_info_cb_2010 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2010.csv")
+deliniate_lulc_info_cb_2011 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2011.csv")
+deliniate_lulc_info_cb_2012 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2012.csv")
+deliniate_lulc_info_cb_2013 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2013.csv")
+deliniate_lulc_info_cb_2014 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2014.csv")
+deliniate_lulc_info_cb_2015 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2015.csv")
+deliniate_lulc_info_cb_2016 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2016.csv")
+deliniate_lulc_info_cb_2017 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2017.csv")
+deliniate_lulc_info_cb_2018 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2018.csv")
+deliniate_lulc_info_cb_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_cb_2019.csv")
+
+cb_full_ds <- rbind(deliniate_lulc_info_cb_2010, deliniate_lulc_info_cb_2011, deliniate_lulc_info_cb_2012, deliniate_lulc_info_cb_2013, deliniate_lulc_info_cb_2014, deliniate_lulc_info_cb_2015, deliniate_lulc_info_cb_2016, deliniate_lulc_info_cb_2017, deliniate_lulc_info_cb_2018, deliniate_lulc_info_cb_2019)
+
+cb_full_ds_stores <- left_join(cb_full_ds, bmp_full)
+
+
+```
+
+
+```{r}
+deliniate_lulc_info_cr_2010 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2010.csv")
+deliniate_lulc_info_cr_2011 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2011.csv")
+deliniate_lulc_info_cr_2012 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2012.csv")
+deliniate_lulc_info_cr_2013 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2013.csv")
+deliniate_lulc_info_cr_2014 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2014.csv")
+deliniate_lulc_info_cr_2015 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2015.csv")
+deliniate_lulc_info_cr_2016 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2016.csv")
+deliniate_lulc_info_cr_2017 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2017.csv")
+deliniate_lulc_info_cr_2018 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2018.csv")
+deliniate_lulc_info_cr_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_cr_2019.csv")
+
+cr_full_ds <- rbind(deliniate_lulc_info_cr_2010, deliniate_lulc_info_cr_2011, deliniate_lulc_info_cr_2012, deliniate_lulc_info_cr_2013, deliniate_lulc_info_cr_2014, deliniate_lulc_info_cr_2015, deliniate_lulc_info_cr_2016, deliniate_lulc_info_cr_2017, deliniate_lulc_info_cr_2018, deliniate_lulc_info_cr_2019)
+
+cr_full_ds_stores <- left_join(cr_full_ds, bmp_full)
+
+
+```
+
+
+```{r}
+deliniate_lulc_info_sb_2010 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2010.csv")
+deliniate_lulc_info_sb_2011 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2011.csv")
+deliniate_lulc_info_sb_2012 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2012.csv")
+deliniate_lulc_info_sb_2013 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2013.csv")
+deliniate_lulc_info_sb_2014 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2014.csv")
+deliniate_lulc_info_sb_2015 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2015.csv")
+deliniate_lulc_info_sb_2016 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2016.csv")
+deliniate_lulc_info_sb_2017 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2017.csv")
+deliniate_lulc_info_sb_2018 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2018.csv")
+deliniate_lulc_info_sb_2019 <- read_csv("./Output_for_Files/deliniate_lulc_info_sb_2019.csv")
+
+sb_full_ds <- rbind(deliniate_lulc_info_sb_2010, deliniate_lulc_info_sb_2011, deliniate_lulc_info_sb_2012, deliniate_lulc_info_sb_2013, deliniate_lulc_info_sb_2014, deliniate_lulc_info_sb_2015, deliniate_lulc_info_sb_2016, deliniate_lulc_info_sb_2017, deliniate_lulc_info_sb_2018, deliniate_lulc_info_sb_2019)
+
+sb_full_ds_stores <- left_join(sb_full_ds, bmp_full)
 
 
 ```
@@ -80,145 +155,851 @@ stormwater_sb <- st_transform(stormwater_sb, 2248)
 # BMPs within a delinated area
 
 ```{r}
+tr104_full_ds_stores_non_0 <- tr104_full_ds_stores%>%
+  filter(year == 2019)%>%
+  filter(!(Stores_cf %in% c(0, NA, NaN)))
 
-tr104_within <- st_join(tr104_bmp_deliniated, stormwater_tr104, join = st_contains)%>%
-  dplyr::select(-c(geometry))
+no_stores_0 <- cbind(tr104_bmp_deliniated,tr104_full_ds_stores%>%filter(year == 2019))  %>%
+    filter(!(Stores_cf %in% c(0, NA, NaN)))
 
-test <- st_join(tr104_bmp_deliniated, tr104_within)
+tr104_within <- st_within(no_stores_0, no_stores_0)
 
-plot(tr104_within$geometry)
+tr104_within_ds<-as.data.frame(seq(from = 1, to = nrow(tr104_within), by = 1))
+tr104_within_ds$index_inside <- tr104_within
+colnames(tr104_within_ds) <- c("index", "index_inside")
+
+
+
+for(i in 1:(nrow(tr104_within_ds))){
+  
+if(identical(tr104_within_ds$index_inside[i][[1]][which(!(tr104_within_ds$index_inside[i][[1]] 
+                                                          %in% tr104_within_ds$index[i]))], integer(0))){
+  
+  tr104_within_ds$fixed_index[i]<- NA
+  
+}else{
+
+tr104_within_ds$fixed_index[i]<-list( tr104_within_ds$index_inside[i][[1]][which(!(tr104_within_ds$index_inside[i][[1]] %in% tr104_within_ds$index[i]))])
+
+
+}
+
+}
+
+
+tr104_modeled <- tr104_full_ds_stores
+tr104_modeled <- tr104_modeled %>%
+    filter(!(Stores_cf %in% c(0, NA, NaN)))
+tr104_modeled$index_inside <- rep(tr104_within_ds$fixed_index, times = 10)
+tr104_modeled$basin_area <- st_area(tr104$geometry)
+tr104_modeled$bmp_drain_area <- rep(st_area(no_stores_0), times = 10)
+
+
+
+```
+
+```{r}
+
+tr109_full_ds_stores_non_0 <- tr109_full_ds_stores%>%filter(year == 2019)%>%
+    filter(!(Stores_cf %in% c(0, NA, NaN)))
+
+no_stores_0 <- cbind(tr109_bmp_deliniated,tr109_full_ds_stores%>%filter(year == 2019))  %>%
+    filter(!(Stores_cf %in% c(0, NA, NaN)))
+
+tr109_within <- st_within(no_stores_0, no_stores_0)
+
+tr109_within_ds<-as.data.frame(seq(from = 1, to = nrow(tr109_within), by = 1))
+tr109_within_ds$index_inside <- tr109_within
+colnames(tr109_within_ds) <- c("index", "index_inside")
+
+
+
+for(i in 1:(nrow(tr109_within_ds))){
+  
+if(identical(tr109_within_ds$index_inside[i][[1]][which(!(tr109_within_ds$index_inside[i][[1]] 
+                                                          %in% tr109_within_ds$index[i]))], integer(0))){
+  
+  tr109_within_ds$fixed_index[i]<- NA
+  
+}else{
+
+tr109_within_ds$fixed_index[i]<-list( tr109_within_ds$index_inside[i][[1]][which(!(tr109_within_ds$index_inside[i][[1]] %in% tr109_within_ds$index[i]))])
+
+
+}
+
+}
+
+
+tr109_modeled <- tr109_full_ds_stores
+tr109_modeled <- tr109_modeled %>%
+    filter(!(Stores_cf %in% c(0, NA, NaN)))
+tr109_modeled$index_inside <- rep(tr109_within_ds$fixed_index, times = 10)
+tr109_modeled$basin_area <- st_area(tr109$geometry)
+tr109_modeled$bmp_drain_area <- rep(st_area(no_stores_0), times = 10)
+
 
 ```
 
 # BMP Watershed Model
 
+Source for percentages: https://beckleysanitaryboard.org/impervious-surface/
+
+
 
 ```{r}
 
 
+modeling_rainfall <- function(Site_BMP_DS, rainfall, Year, site_name, rainfall_ds_name, X){
 
-for(i in 1:nrow(BMP)){
-  
-  
-  
-   run_off_coeff <- (bmp$forest_area[i]/total_area[i])*forest + 
-     (bmp$impervious_area[i]/total_area[i])*impervious + 
-     (bmp$grass_area[i]/total_area[i])*grass + 
-     (bmp$barren_area[i]/total_area[i])*barren
-   
-   runoff_not_stored <- tibble()
-   stores_empty <- tibble()
-   total_infiltrate <- 0
-  
-   for(j in 1:nrow(rainfall)){
-     
+impervious <- 0.98
 
-     incoming_runoff <-  (rainfall$rain[j]*run_off_coeff*total_area[i])/1728 #inches cubed to feet cubed
-
-     infiltrate <- rainfall[j]*total_area[i] - incoming_runoff
-     
-     total_infiltrate <- (total_infiltrate + infriltrate)
- 
-     if(total_infiltrate < x){
-       incoming_runoff_test <- incoming_runoff
-       
-     } else{
-       
-       incoming_runoff_test <- rainfall[j]*total_area[i]
-     }
-     
-     if( j == 1){
+forest <- 0.02
   
-  remaining_storage <- bmp$storage[i]-incoming_runoff_test + outflow # storage is is cubic feet
-  } else{
-    
-    remaining_storage <- remaining_storage - incoming_runoff_test + outflow
-    
-    }
-  
+barren <- 0.85
 
-  water_not_stored <- -(remaining_storage - incoming_runoff_test)
+grass <- 0.14
   
-  
-  runoff_not_stored <- rbind(runoff_not_stored, water_not_stored)
-  
-  stores_empty <- rbind(stores_empty, remaining_storage)
-
-   } 
-   
-}
-```
-
-
-```{r}
+bmp <- Site_BMP_DS %>%
+  filter(year == Year)%>%
+  dplyr::select(ASSET, Stores_cf, index_inside, bmp_drain_area, lulc_20, lulc_30, lulc_40, lulc_70)%>%
+  mutate(outflow = Stores_cf/(24*15))
 
 runoff_not_stored <- tibble()
-   stores_empty <- tibble()
-   total_infiltrate <- 0
+stores_empty <- tibble()
+total_infiltrate <- 0
+
+units(bmp$bmp_drain_area) <- NULL   
 
 for(j in 1:nrow(rainfall)){
   
-  for(i in 1:nrow(BMP)){
+   if(j == 1){
     
+  stores_empty <- as.data.frame(bmp$Stores_cf)
+   colnames(stores_empty) <- c("stores_remain")
+    
+  }else{}
   
-   
-   test_indicies <- bmp$other_bmp_indicies[i] + (j)*j
+  for(i in 1:nrow(bmp)){
     
-    if(any(remaining_storage$stores_reamining[test_indicies]>0)){
+    
+  if(is.na(bmp$index_inside[i]) == TRUE){
+    
+    test_indicies <- 0
+  }else{
+   
+   test_indicies <- bmp$index_inside[i][[1]] + (nrow(bmp)*(j-1))
+  }
+    
+    if(any(stores_empty$stores_remain[test_indicies]>0)){
       
-      #### need way to convert information
+   test_string <- names(which(stores_empty$stores_remain[test_indicies]>0))
         
-        total_area <- bmp$total_area - sum(which(any(remaining_storage$stores_reamining[test_indicies]>0)*)
+        total_area <- as.numeric(bmp$bmp_drain_area[i] - sum(bmp$bmp_drain_area[test_indicies]*test_string))
         
-        #having a hard time conceptualizing this one
-        # if the remaining stores for bmp name from bmp other name is less than greater than 0 at  use area_2
+        
         
       }else{
         
-      total_area <- bmp$total_area
-     
-       }
-   
-      incoming_runoff <-  (rainfall$rain[j]*run_off_coeff*total_area[i])/1728 #inches cubed to feet cubed
-        
-      infiltrate <- rainfall[j]*total_area[i] - incoming_runoff
+      total_area <- as.numeric(bmp$bmp_drain_area[i])
       
-      run_off_coeff <- (bmp$forest_area[i]/bmp$total_area[i])*forest + 
-     (bmp$impervious_area[i]/bmp$total_area[i])*impervious + 
-     (bmp$grass_area[i]/bmp$total_area[i])*grass + 
-     (bmp$barren_area[i]/bmp$total_area[i])*barren
+     
+       } 
+      run_off_coeff <- (bmp$lulc_70[i]/bmp$bmp_drain_area[i])*forest + 
+     (bmp$lulc_20[i]/bmp$bmp_drain_area[i])*impervious + 
+     (bmp$lulc_40[i]/bmp$bmp_drain_area[i])*grass + 
+     (bmp$lulc_30[i]/bmp$bmp_drain_area[i])*barren
+      
+     
+   
+      incoming_runoff <-  (rainfall$rain[j]*run_off_coeff*total_area) 
+        
+      infiltrate <- ((rainfall$rain[j]*total_area) - incoming_runoff)
      
      
-    total_infiltrate <- (total_infiltrate + infriltrate)
+     
+    total_infiltrate <- (total_infiltrate + infiltrate)
 
     
-     if(total_infiltrate < x){
+     if(total_infiltrate < X){
        incoming_runoff_test <- incoming_runoff
        
      } else{
        
-       incoming_runoff_test <- rainfall[j]*total_area[i]
+       incoming_runoff_test <- rainfall$rain[j]*total_area
      }
      
      if( j == 1){
+       
+       if(stores_empty$stores_remain[i] == bmp$Stores_cf[i]){
+       
+       outflow <- 0
+       
+     } else{
+       outflow <- bmp$outflow[i]
+     }
   
-  remaining_storage$stores_remaining <- bmp$storage[i]-incoming_runoff_test + outflow # storage is is cubic feet
-  remaining_storage$bmp_name <- bmp$name[i] 
+  remaining_storage <- as.data.frame(stores_empty$stores_remain[i]-incoming_runoff_test + outflow) # storage is is cubic feet
+   colnames(remaining_storage) <- "stores_remain"
+   
   } else{
     
-    remaining_storage$stores_reamining <- remaining_storage - incoming_runoff_test + outflow
-    remaining_storage$bmp_name <- bmp$name[i]
+    if(stores_empty$stores_remain[i + ((j-1)*nrow(bmp))] >= bmp$Stores_cf[i]){
+       
+       outflow <- 0
+       
+     } else{
+       outflow <- bmp$outflow[i]
+     }
+    
+    if(stores_empty$stores_remain[i + ((j-1)*nrow(bmp))]>stores_empty$stores_remain[i]){
+      
+
+      
+      remaining_storage <- as.data.frame(stores_empty$stores_remain[i] - incoming_runoff_test + outflow)
+    colnames(remaining_storage) <- "stores_remain"
+    }else{
+      
+      remaining_storage <- as.data.frame(stores_empty$stores_remain[i + ((j-1)*nrow(bmp))] - incoming_runoff_test + outflow)
+    colnames(remaining_storage) <- "stores_remain"
+      
+    }
+   
     
   }
     
-  water_not_stored$not_stored <- -(remaining_storage - incoming_runoff_test)
-  water_not_stored$bmp_name <- bmp$name[i]
+  water_not_stored <- as.data.frame(-(stores_empty$stores_remain[i + ((j-1)*nrow(bmp))] - incoming_runoff_test + outflow))
+ 
+ 
   
+  runoff_not_stored <- bind_rows(runoff_not_stored, water_not_stored)
   
-  runoff_not_stored <- rbind(runoff_not_stored, water_not_stored)
-  
-  stores_empty <- rbind(stores_empty, remaining_storage)
+  stores_empty <- bind_rows(stores_empty, remaining_storage)
     
     
-}}
+  }
+
+  
+}
+   
+   write.csv(runoff_not_stored, paste0("./Output_for_Files/runoff_not_stored_", site_name, "_", rainfall_ds_name, ".csv"))
+   write.csv(stores_empty, paste0("./Output_for_Files/empty_stores_", site_name,"_", rainfall_ds_name, ".csv"))
+}
 ```
+Outflow values are based on https://mde.maryland.gov/programs/Water/StormwaterManagementProgram/Documents/www.mde.state.md.us/assets/document/chapter2.pdf
+
+# Los Angeles 
+
+```{r}
+
+modeling_rainfall(Site_BMP_DS = tr104_modeled, rainfall = precip_los_angeles_typical_event, Year = 2019, site_name = "tr104", rainfall_ds_name = "typical_los_angeles", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr109_modeled, rainfall = precip_los_angeles_typical_event, Year = 2019, site_name = "tr109", rainfall_ds_name = "typical_los_angeles", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr104_modeled, rainfall = precip_los_angeles_extreme_event, Year = 2019, site_name = "tr104", rainfall_ds_name = "extreme_los_angeles", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr109_modeled, rainfall = precip_los_angeles_extreme_event, Year = 2019, site_name = "tr109", rainfall_ds_name = "extreme_los_angeles", X = 20)
+
+
+```
+
+# Dallas
+
+```{r}
+
+modeling_rainfall(Site_BMP_DS = tr104_modeled, rainfall = precip_dallas_typical_event, Year = 2019, site_name = "tr104", rainfall_ds_name = "typical_dallas", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr109_modeled, rainfall = precip_dallas_typical_event, Year = 2019, site_name = "tr109", rainfall_ds_name = "typical_dallas", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr104_modeled, rainfall = precip_dallas_extreme_event, Year = 2019, site_name = "tr104", rainfall_ds_name = "extreme_dallas", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr109_modeled, rainfall = precip_dallas_extreme_event, Year = 2019, site_name = "tr109", rainfall_ds_name = "extreme_dallas", X = 20)
+
+
+```
+
+# Seattle
+
+```{r}
+
+modeling_rainfall(Site_BMP_DS = tr104_modeled, rainfall = precip_seattle_typical_event, Year = 2019, site_name = "tr104", rainfall_ds_name = "typical_seattle", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr109_modeled, rainfall = precip_seattle_typical_event, Year = 2019, site_name = "tr109", rainfall_ds_name = "typical_seattle", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr109_modeled, rainfall = precip_seattle_extreme_event, Year = 2019, site_name = "tr109", rainfall_ds_name = "extreme_seattle", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr104_modeled, rainfall = precip_seattle_extreme_event, Year = 2019, site_name = "tr104", rainfall_ds_name = "extreme_seattle", X = 20)
+
+
+```
+
+# Clarksburg 
+
+```{r}
+
+modeling_rainfall(Site_BMP_DS = tr109_modeled, rainfall = precip_clarksburg_typical_event, Year = 2019, site_name = "tr109", rainfall_ds_name = "typical_clarksburg", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr104_modeled, rainfall = precip_clarksburg_typical_event, Year = 2019, site_name = "tr104", rainfall_ds_name = "typical_clarksburg", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr109_modeled, rainfall = precip_clarksburg_extreme_event, Year = 2019, site_name = "tr109", rainfall_ds_name = "extreme_clarksburg", X = 20)
+
+modeling_rainfall(Site_BMP_DS = tr104_modeled, rainfall = precip_clarksburg_extreme_event, Year = 2019, site_name = "tr104", rainfall_ds_name = "extreme_clarksburg", X = 20)
+
+
+```
+
+
+# Reading datasets and adding columns for time and asset
+
+```{r}
+clarksburg_typical_109 <- read.csv("Output_for_Files/empty_stores_tr109_typical_clarksburg.csv")
+clarksburg_extreme_109 <- read.csv("Output_for_Files/empty_stores_tr109_extreme_clarksburg.csv")
+
+clarksburg_typical_104 <- read.csv("Output_for_Files/empty_stores_tr104_typical_clarksburg.csv")
+clarksburg_extreme_104 <- read.csv("Output_for_Files/empty_stores_tr104_extreme_clarksburg.csv")
+
+dallas_typical_109 <- read.csv("Output_for_Files/empty_stores_tr109_typical_dallas.csv")
+dallas_extreme_109 <- read.csv("Output_for_Files/empty_stores_tr109_extreme_dallas.csv")
+
+dallas_typical_104 <- read.csv("Output_for_Files/empty_stores_tr104_typical_dallas.csv")
+dallas_extreme_104 <- read.csv("Output_for_Files/empty_stores_tr104_extreme_dallas.csv")
+
+los_angeles_typical_109 <- read.csv("Output_for_Files/empty_stores_tr109_typical_los_angeles.csv")
+los_angeles_extreme_109 <- read.csv("Output_for_Files/empty_stores_tr109_extreme_los_angeles.csv")
+
+los_angeles_typical_104 <- read.csv("Output_for_Files/empty_stores_tr104_typical_los_angeles.csv")
+los_angeles_extreme_104 <- read.csv("Output_for_Files/empty_stores_tr104_extreme_los_angeles.csv")
+
+seattle_typical_109 <- read.csv("Output_for_Files/empty_stores_tr109_typical_seattle.csv")
+seattle_extreme_109 <- read.csv("Output_for_Files/empty_stores_tr109_extreme_seattle.csv")
+
+seattle_typical_104 <- read.csv("Output_for_Files/empty_stores_tr104_typical_seattle.csv")
+seattle_extreme_104 <- read.csv("Output_for_Files/empty_stores_tr104_extreme_seattle.csv")
+
+
+tr104_for_rep <- tr104_modeled%>%dplyr::filter(year == 2019)
+tr109_for_rep <- tr109_modeled%>%dplyr::filter(year == 2019)
+
+seattle_extreme_104$bmp_name <- rep(as.character(tr104_full_ds_stores_non_0$ASSET), times = 192)
+seattle_extreme_104$dateTime <- rep(1:192, each = 85)
+seattle_extreme_104$drainage_area <- rep(tr104_for_rep$bmp_drain_area, times = 192)
+seattle_extreme_104$storage_as_inches <- (seattle_extreme_104$stores_remain/seattle_extreme_104$drainage_area)*12
+
+
+seattle_extreme_109$bmp_name <- rep(as.character(tr109_full_ds_stores_non_0$ASSET), times = 192)
+seattle_extreme_109$dateTime <- rep(1:192, each = 173)
+seattle_extreme_109$drainage_area <- rep(tr109_for_rep$bmp_drain_area, times = 192)
+seattle_extreme_109$storage_as_inches <- (seattle_extreme_109$stores_remain/seattle_extreme_109$drainage_area)*12
+
+seattle_typical_104$bmp_name <- rep(as.character(tr104_full_ds_stores_non_0$ASSET), times = 192)
+seattle_typical_104$dateTime <- rep(1:192, each = 85)
+seattle_typical_104$drainage_area <- rep(tr104_for_rep$bmp_drain_area, times = 192)
+seattle_typical_104$storage_as_inches <- (seattle_typical_104$stores_remain/seattle_typical_104$drainage_area)*12
+
+seattle_typical_109$bmp_name <- rep(as.character(tr109_full_ds_stores_non_0$ASSET), times = 192)
+seattle_typical_109$dateTime <- rep(1:192, each = 173)
+seattle_typical_109$drainage_area <- rep(tr109_for_rep$bmp_drain_area, times = 192)
+seattle_typical_109$storage_as_inches <- (seattle_typical_109$stores_remain/seattle_typical_109$drainage_area)*12
+ 
+
+
+clarksburg_extreme_104$bmp_name <- rep(as.character(tr104_full_ds_stores_non_0$ASSET), times = 192)
+clarksburg_extreme_104$dateTime <- rep(1:192, each = 85)
+clarksburg_extreme_104$drainage_area <- rep(tr104_for_rep$bmp_drain_area, times = 192)
+clarksburg_extreme_104$storage_as_inches <- (clarksburg_extreme_104$stores_remain/clarksburg_extreme_104$drainage_area)*12
+
+
+clarksburg_extreme_109$bmp_name <- rep(as.character(tr109_full_ds_stores_non_0$ASSET), times = 192)
+clarksburg_extreme_109$dateTime <- rep(1:192, each = 173)
+clarksburg_extreme_109$drainage_area <- rep(tr109_for_rep$bmp_drain_area, times = 192)
+clarksburg_extreme_109$storage_as_inches <- (clarksburg_extreme_109$stores_remain/clarksburg_extreme_109$drainage_area)*12
+
+clarksburg_typical_104$bmp_name <- rep(as.character(tr104_full_ds_stores_non_0$ASSET), times = 192)
+clarksburg_typical_104$dateTime <- rep(1:192, each = 85)
+clarksburg_typical_104$drainage_area <- rep(tr104_for_rep$bmp_drain_area, times = 192)
+clarksburg_typical_104$storage_as_inches <- (clarksburg_typical_104$stores_remain/clarksburg_typical_104$drainage_area)*12
+
+clarksburg_typical_109$bmp_name <- rep(as.character(tr109_full_ds_stores_non_0$ASSET), times = 192)
+clarksburg_typical_109$dateTime <- rep(1:192, each = 173)
+clarksburg_typical_109$drainage_area <- rep(tr109_for_rep$bmp_drain_area, times = 192)
+clarksburg_typical_109$storage_as_inches <- (clarksburg_typical_109$stores_remain/clarksburg_typical_109$drainage_area)*12
+
+
+
+dallas_extreme_104$bmp_name <- rep(as.character(tr104_full_ds_stores_non_0$ASSET), times = 192)
+dallas_extreme_104$dateTime <- rep(1:192, each = 85)
+dallas_extreme_104$drainage_area <- rep(tr104_for_rep$bmp_drain_area, times = 192)
+dallas_extreme_104$storage_as_inches <- (dallas_extreme_104$stores_remain/dallas_extreme_104$drainage_area)*12
+
+
+dallas_extreme_109$bmp_name <- rep(as.character(tr109_full_ds_stores_non_0$ASSET), times = 192)
+dallas_extreme_109$dateTime <- rep(1:192, each = 173)
+dallas_extreme_109$drainage_area <- rep(tr109_for_rep$bmp_drain_area, times = 192)
+dallas_extreme_109$storage_as_inches <- (dallas_extreme_109$stores_remain/dallas_extreme_109$drainage_area)*12
+
+dallas_typical_104$bmp_name <- rep(as.character(tr104_full_ds_stores_non_0$ASSET), times = 192)
+dallas_typical_104$dateTime <- rep(1:192, each = 85)
+dallas_typical_104$drainage_area <- rep(tr104_for_rep$bmp_drain_area, times = 192)
+dallas_typical_104$storage_as_inches <- (dallas_typical_104$stores_remain/dallas_typical_104$drainage_area)*12
+
+dallas_typical_109$bmp_name <- rep(as.character(tr109_full_ds_stores_non_0$ASSET), times = 192)
+dallas_typical_109$dateTime <- rep(1:192, each = 173)
+dallas_typical_109$drainage_area <- rep(tr109_for_rep$bmp_drain_area, times = 192)
+dallas_typical_109$storage_as_inches <- (dallas_typical_109$stores_remain/dallas_typical_109$drainage_area)*12
+
+
+los_angeles_extreme_104$bmp_name <- rep(as.character(tr104_full_ds_stores_non_0$ASSET), times = 192)
+los_angeles_extreme_104$dateTime <- rep(1:192, each = 85)
+los_angeles_extreme_104$drainage_area <- rep(tr104_for_rep$bmp_drain_area, times = 192)
+los_angeles_extreme_104$storage_as_inches <- (los_angeles_extreme_104$stores_remain/los_angeles_extreme_104$drainage_area)*12
+
+
+los_angeles_extreme_109$bmp_name <- rep(as.character(tr109_full_ds_stores_non_0$ASSET), times = 192)
+los_angeles_extreme_109$dateTime <- rep(1:192, each = 173)
+los_angeles_extreme_109$drainage_area <- rep(tr109_for_rep$bmp_drain_area, times = 192)
+los_angeles_extreme_109$storage_as_inches <- (los_angeles_extreme_109$stores_remain/los_angeles_extreme_109$drainage_area)*12
+
+los_angeles_typical_104$bmp_name <- rep(as.character(tr104_full_ds_stores_non_0$ASSET), times = 192)
+los_angeles_typical_104$dateTime <- rep(1:192, each = 85)
+los_angeles_typical_104$drainage_area <- rep(tr104_for_rep$bmp_drain_area, times = 192)
+los_angeles_typical_104$storage_as_inches <- (los_angeles_typical_104$stores_remain/los_angeles_typical_104$drainage_area)*12
+
+los_angeles_typical_109$bmp_name <- rep(as.character(tr109_full_ds_stores_non_0$ASSET), times = 192)
+los_angeles_typical_109$dateTime <- rep(1:192, each = 173)
+los_angeles_typical_109$drainage_area <- rep(tr109_for_rep$bmp_drain_area, times = 192)
+los_angeles_typical_109$storage_as_inches <- (los_angeles_typical_109$stores_remain/los_angeles_typical_109$drainage_area)*12
+
+```
+
+# Plots tr109
+
+```{r}
+
+options(scipen = 4)
+library(plotly)
+
+ggplotly(ggplot() + geom_line(data = clarksburg_extreme_109%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601")), aes(x = dateTime, y = stores_remain, color = bmp_name)) + theme_economist()+scale_color_economist() +labs(x = "", y = ""))
+
+
+
+ggplotly(ggplot() +  geom_line(data = clarksburg_typical_109%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10())
+
+
+ggplotly(ggplot() + geom_line(data = dallas_extreme_109%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10()) 
+
+ggplotly(ggplot() +  geom_line(data = dallas_typical_109%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10())
+
+
+ggplotly(ggplot() + geom_line(data = los_angeles_extreme_109%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10())
+
+
+ggplotly(ggplot() +  geom_line(data = los_angeles_typical_109%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10())
+
+
+
+ggplotly(ggplot() + geom_line(data = seattle_extreme_109%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10()) 
+
+ggplotly(ggplot() +  geom_line(data = seattle_typical_109%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10())
+
+
+
+```
+
+
+# Plots tr104
+
+```{r}
+
+ggplotly(ggplot() + geom_line(data = clarksburg_extreme_104%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10()+theme_economist()+scale_color_economist()) 
+
+ggplotly(ggplot() +  geom_line(data = clarksburg_typical_104%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10()+theme_economist())
+
+
+ggplotly(ggplot() + geom_line(data = dallas_extreme_104%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10()) 
+
+ggplotly(ggplot() +  geom_line(data = dallas_typical_104%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10())
+
+
+ggplotly(ggplot() + geom_line(data = los_angeles_extreme_104%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10())
+
+
+ggplotly(ggplot() +  geom_line(data = los_angeles_typical_104%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10())
+
+
+
+ggplotly(ggplot() + geom_line(data = seattle_extreme_104%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10()) 
+
+ggplotly(ggplot() +  geom_line(data = seattle_typical_104%>%filter(bmp_name %in% c("23005", "24580", "22610", "26644", "26161", "26683", "26574", "26601"))%>%filter(stores_remain>0), aes(x = dateTime, y = stores_remain, color = bmp_name))+scale_y_log10())
+
+
+
+```
+
+
+```{r}
+precip_clarksburg_extreme_event$dateTime <- seq(1:191)
+
+p1<- ggplot() + geom_line(data = clarksburg_extreme_109%>%filter(dateTime>40), aes(x = dateTime, y = stores_remain, group = bmp_name), color = "grey")+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-109")+theme(legend.position = "none") + geom_line(data = precip_clarksburg_extreme_event%>%filter(dateTime>40), aes(y = rain*2000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*2000000), limits = c(-500000, 200000)) + theme(plot.title = element_text(size=10))+ theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+
+
+p2<- ggplot() + geom_line(data = clarksburg_extreme_104%>%filter(dateTime>40), aes(x = dateTime, y = stores_remain, group = bmp_name), color = "grey")+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-104")+theme(legend.position = "none") + geom_line(data = precip_clarksburg_extreme_event%>%filter(dateTime>40), aes(y = rain*2000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*2000000), limits = c(-500000, 200000)) + theme(plot.title = element_text(size=10)) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+
+plot <- plot_grid(p1, p2, ncol = 1)
+
+y.grob <- textGrob("Storage Remaining (Cubic Feet)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=90)
+
+x.grob <- textGrob("Time ==>", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12))
+title.grob <- textGrob("BMP Storage Throughout an Extreme Rain Event in Clarksburg, MD", 
+                   gp=gpar(fontface="bold", col="black", fontsize=14))
+second_x <- textGrob("Rainfall Scaled by 2000000 (ft)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=270)
+
+#add to plot
+
+grid.arrange(arrangeGrob(plot, left = y.grob, bottom = x.grob, top = title.grob, right = second_x))
+
+```
+
+
+
+
+```{r}
+precip_clarksburg_typical_event$dateTime <- seq(1:191)
+
+p1<- ggplot() + geom_line(data = clarksburg_typical_109%>%filter(dateTime>120), aes(x = dateTime, y = stores_remain, group = bmp_name), color = "grey")+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-109")+theme(legend.position = "none") + geom_line(data = precip_clarksburg_typical_event%>%filter(dateTime>120), aes(y = rain*20000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*20000000), limits = c(-18000, 200000)) + theme(plot.title = element_text(size=10))+ theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+
+
+p2<- ggplot() + geom_line(data = clarksburg_typical_104%>%filter(dateTime>120), aes(x = dateTime, y = stores_remain, group = bmp_name), color = "grey")+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-104")+theme(legend.position = "none") + geom_line(data = precip_clarksburg_typical_event%>%filter(dateTime>120), aes(y = rain*20000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*20000000), limits = c(-18000, 200000)) + theme(plot.title = element_text(size=10)) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+
+plot <- plot_grid(p1, p2, ncol = 1)
+
+y.grob <- textGrob("Storage Remaining (Cubic Feet)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=90)
+
+x.grob <- textGrob("Time ==>", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12))
+title.grob <- textGrob("BMP Storage Throughout a Typical Rain Event in Clarksburg, MD", 
+                   gp=gpar(fontface="bold", col="black", fontsize=14))
+second_x <- textGrob("Rainfall Scaled by 20000000 (ft)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=270)
+
+#add to plot
+
+grid.arrange(arrangeGrob(plot, left = y.grob, bottom = x.grob, top = title.grob, right = second_x))
+
+```
+
+```{r}
+precip_seattle_typical_event$dateTime <- seq(1:191)
+
+p1<- ggplot() + geom_line(data = seattle_typical_109, aes(x = dateTime, y = stores_remain, color = bmp_name))+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-109")+theme(legend.position = "none") + geom_line(data = precip_seattle_typical_event, aes(y = rain*1000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*1000000), limits = c(-150000, 200000)) + theme(plot.title = element_text(size=10))
+
+
+p2 <- ggplot() + geom_line(data = seattle_typical_104, aes(x = dateTime, y = stores_remain, color = bmp_name)) + theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-104")+theme(legend.position = "none") + geom_line(data = precip_seattle_typical_event, aes(y = rain*1000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*1000000), limits = c(-150000, 200000))+ theme(plot.title = element_text(size=10))
+
+plot <- plot_grid(p1, p2, ncol = 1)
+
+y.grob <- textGrob("Storage Remaining (Cubic Feet)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=90)
+
+x.grob <- textGrob("Storm Time Step", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12))
+title.grob <- textGrob("BMP Storage Throughout a Typical Rain Event in Seattle, WA", 
+                   gp=gpar(fontface="bold", col="black", fontsize=14))
+second_x <- textGrob("Rainfall Scaled by 1000000 (ft)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=270)
+
+#add to plot
+
+grid.arrange(arrangeGrob(plot, left = y.grob, bottom = x.grob, top = title.grob, right = second_x))
+
+
+```
+
+```{r}
+precip_dallas_typical_event$dateTime <- seq(1:191)
+
+p1<- ggplot() + geom_line(data = dallas_typical_109, aes(x = dateTime, y = stores_remain, color = bmp_name))+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-109")+theme(legend.position = "none") + geom_line(data = precip_dallas_typical_event, aes(y = rain*10000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*10000000), limits = c(-150000, 200000)) + theme(plot.title = element_text(size=10))
+
+
+p2 <- ggplot() + geom_line(data = dallas_typical_104, aes(x = dateTime, y = stores_remain, color = bmp_name)) + theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-104")+theme(legend.position = "none") + geom_line(data = precip_dallas_typical_event, aes(y = rain*10000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*10000000), limits = c(-150000, 200000))+ theme(plot.title = element_text(size=10))
+
+plot <- plot_grid(p1, p2, ncol = 1)
+
+y.grob <- textGrob("Storage Remaining (Cubic Feet)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=90)
+
+x.grob <- textGrob("Storm Time Step", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12))
+title.grob <- textGrob("BMP Storage Throughout a Typical Rain Event in Dallas, TX", 
+                   gp=gpar(fontface="bold", col="black", fontsize=14))
+second_x <- textGrob("Rainfall Scaled by 100000 (ft)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=270)
+
+#add to plot
+
+grid.arrange(arrangeGrob(plot, left = y.grob, bottom = x.grob, top = title.grob, right = second_x))
+
+```
+
+```{r}
+precip_dallas_extreme_event$dateTime <- seq(1:191)
+
+p1<- ggplot() + geom_line(data = dallas_extreme_109, aes(x = dateTime, y = stores_remain, color = bmp_name))+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-109")+theme(legend.position = "none") + geom_line(data = precip_dallas_extreme_event, aes(y = rain*1000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*1000000), limits = c(-150000, 200000)) + theme(plot.title = element_text(size=10))
+
+
+p2 <- ggplot() + geom_line(data = dallas_extreme_104, aes(x = dateTime, y = stores_remain, color = bmp_name)) + theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-104")+theme(legend.position = "none") + geom_line(data = precip_dallas_extreme_event, aes(y = rain*1000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*1000000), limits = c(-150000, 200000))+ theme(plot.title = element_text(size=10))
+
+plot <- plot_grid(p1, p2, ncol = 1)
+
+y.grob <- textGrob("Storage Remaining (Cubic Feet)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=90)
+
+x.grob <- textGrob("Storm Time Step", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12))
+title.grob <- textGrob("BMP Storage Throughout an Extreme Rain Event in Dallas, TX", 
+                   gp=gpar(fontface="bold", col="black", fontsize=14))
+second_x <- textGrob("Rainfall Scaled by 1000000 (ft)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=270)
+
+#add to plot
+
+grid.arrange(arrangeGrob(plot, left = y.grob, bottom = x.grob, top = title.grob, right = second_x))
+
+```
+
+```{r}
+precip_seattle_extreme_event$dateTime <- seq(1:191)
+
+p1<- ggplot() + geom_line(data = seattle_extreme_109, aes(x = dateTime, y = stores_remain, color = bmp_name))+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-109")+theme(legend.position = "none") + geom_line(data = precip_seattle_extreme_event, aes(y = rain*1000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*1000000), limits = c(-150000, 200000)) + theme(plot.title = element_text(size=10))
+
+
+p2 <- ggplot() + geom_line(data = seattle_extreme_104, aes(x = dateTime, y = stores_remain, color = bmp_name)) + theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-104")+theme(legend.position = "none") + geom_line(data = precip_seattle_extreme_event, aes(y = rain*1000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*1000000), limits = c(-150000, 200000))+ theme(plot.title = element_text(size=10))
+
+plot <- plot_grid(p1, p2, ncol = 1)
+
+y.grob <- textGrob("Storage Remaining (Cubic Feet)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=90)
+
+x.grob <- textGrob("Storm Time Step", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12))
+title.grob <- textGrob("BMP Storage Throughout an Extreme Rain Event in Seattle, WA", 
+                   gp=gpar(fontface="bold", col="black", fontsize=14))
+second_x <- textGrob("Rainfall Scaled by 1000000 (ft)", 
+                   gp=gpar(fontface="bold", col="black", fontsize=12), rot=270)
+
+#add to plot
+
+grid.arrange(arrangeGrob(plot, left = y.grob, bottom = x.grob, top = title.grob, right = second_x))
+
+```
+
+# Stats for Model
+
+```{r}
+library(dplyr)
+
+clarksburg_extreme_104_change <- clarksburg_extreme_104 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+  
+clarksburg_extreme_109_change <- clarksburg_extreme_109 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+
+clarksburg_typical_104_change <- clarksburg_typical_104 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+clarksburg_typical_109_change <- clarksburg_typical_109 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+
+
+
+
+seattle_extreme_104_change <- seattle_extreme_104 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+  
+seattle_extreme_109_change <- seattle_extreme_109 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+ dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+
+seattle_typical_104_change <- seattle_typical_104 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+seattle_typical_109_change <- seattle_typical_109 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+ dplyr:: mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+
+
+
+
+
+dallas_extreme_104_change <- dallas_extreme_104 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+ dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+  
+dallas_extreme_109_change <- dallas_extreme_109 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+
+dallas_typical_104_change <- dallas_typical_104 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+dallas_typical_109_change <- dallas_typical_109 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+
+
+
+
+los_angeles_extreme_104_change <- los_angeles_extreme_104 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+  
+los_angeles_extreme_109_change <- los_angeles_extreme_109 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+
+los_angeles_typical_104_change <-los_angeles_typical_104 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+los_angeles_typical_109_change <- los_angeles_typical_109 %>%
+  group_by(bmp_name)%>%
+  dplyr::summarize(stores_remain_end = min(stores_remain))%>%
+  dplyr::mutate(pos_or_neg = ifelse(stores_remain_end>0, 0,1))%>%
+  dplyr::mutate(percent_no_storage = (sum(pos_or_neg)/n())*100)
+
+
+```
+
+
+```{r}
+los_angeles_extreme_104$rainfall_senario <- "Los Angeles Extreme"
+los_angeles_extreme_104$site <- "TR-104"
+los_angeles_extreme_109$rainfall_senario <- "Los Angeles Extreme"
+los_angeles_extreme_109$site <- "TR-109"
+los_angeles_typical_104$rainfall_senario <- "Los Angeles Typical"
+los_angeles_typical_104$site <- "TR-104"
+los_angeles_typical_109$rainfall_senario <- "Los Angeles Typical"
+los_angeles_typical_109$site <- "TR-109"
+
+dallas_extreme_104$rainfall_senario <- "Dallas Extreme"
+dallas_extreme_104$site <- "TR-104"
+dallas_extreme_109$rainfall_senario <- "Dallas Extreme"
+dallas_extreme_109$site <- "TR-109"
+dallas_typical_104$rainfall_senario <- "Dallas Typical"
+dallas_typical_104$site <- "TR-104"
+dallas_typical_109$rainfall_senario <- "Dallas Typical"
+dallas_typical_109$site <- "TR-109"
+
+seattle_extreme_104$rainfall_senario <- "Seattle Extreme"
+seattle_extreme_104$site <- "TR-104"
+seattle_extreme_109$rainfall_senario <- "Seattle Extreme"
+seattle_extreme_109$site <- "TR-109"
+seattle_typical_104$rainfall_senario <- "Seattle Typical"
+seattle_typical_104$site <- "TR-104"
+seattle_typical_109$rainfall_senario <- "Seattle Typical"
+seattle_typical_109$site <- "TR-109"
+
+clarksburg_extreme_104$rainfall_senario <- "Clarksburg Extreme"
+clarksburg_extreme_104$site <- "TR-104"
+clarksburg_extreme_109$rainfall_senario <- "Clarksburg Extreme"
+clarksburg_extreme_109$site <- "TR-109"
+clarksburg_typical_104$rainfall_senario <- "Clarksburg Typical"
+clarksburg_typical_104$site <- "TR-104"
+clarksburg_typical_109$rainfall_senario <- "Clarksburg Typical"
+clarksburg_typical_109$site <- "TR-109"
+
+all_senarios_results <- rbind(clarksburg_extreme_104, clarksburg_extreme_109, clarksburg_typical_104, clarksburg_typical_109,
+     dallas_extreme_104,dallas_extreme_109,dallas_typical_104,dallas_typical_109,
+     seattle_extreme_104, seattle_extreme_109, seattle_typical_104, seattle_typical_109,
+     los_angeles_extreme_104, los_angeles_extreme_109, los_angeles_typical_104, los_angeles_typical_109)
+
+write.csv(all_senarios_results, file = "./Output_for_Files/all_senario_results.csv")
+
+
+all_senarios_results <- all_senario_results %>%
+  dplyr::mutate(stores_remain_no_neg = ifelse(stores_remain>0, stores_remain, 0))
+
+all_senarios_results <- all_senarios_results %>%
+  group_by(rainfall_senario, site, bmp_name)%>%
+  dplyr::mutate(storage_difference = ((max(stores_remain_no_neg)-min(stores_remain_no_neg))/max(stores_remain_no_neg))*100)
+
+all_senarios_results_low_usage <- all_senarios_results%>%
+  filter(storage_difference<5& site == "TR-104"&rainfall_senario == "Clarksburg Typical")
+
+all_senarios_results_summary <- all_senarios_results %>%
+  group_by(rainfall_senario, dateTime, site)%>%
+  dplyr::summarise(cumulative_storage_available = sum(stores_remain_no_neg))
+
+ggplot(all_senarios_results_summary, aes(x = dateTime, y = cumulative_storage_available, color = rainfall_senario, linetype = rainfall_senario)) + geom_line(size = 1.2) + facet_wrap("site") + scale_color_economist() +theme_economist() + labs(x = "", y = "Total Storage Available", color = "Rainfall Scenario", linetype = "Rainfall Scenario") + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())+theme(legend.position = "right", legend.text = element_text(size=10))+ theme(axis.title.y = element_text(vjust=3)) 
+
+all_senarios_results_summary_2 <- all_senarios_results_summary%>%
+  group_by(rainfall_senario, site)%>%
+  dplyr::summarize(range = max(cumulative_storage_available)-min(cumulative_storage_available))
+  
+
+```
+
+```{r}
+library(BDSA)
+install.packages("BDSA")
+
+tr_104_typical <- c(15.3, 29.4, 30.6, 15.3)
+tr_109_typical <- c(44.5, 48.0, 49.1, 38.7)
+t.test(tr_104_typical, tr_109_typical, paired = TRUE, alternative = "less")
+wilcox.test(tr_104_typical, tr_109_typical)
+
+z.test(tr_104_typical, tr_109_typical, paired = TRUE, alternative = "two.sided")
+
+d <- tr_104_typical-tr_109_typical
+# Shapiro-Wilk normality test for the differences
+shapiro.test(d) 
+
+```
+
