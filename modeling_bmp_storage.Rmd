@@ -637,20 +637,25 @@ ggplotly(ggplot() +  geom_line(data = seattle_typical_104%>%filter(bmp_name %in%
 
 
 ```{r}
+options(scipen = 999)
+
 precip_clarksburg_extreme_event$dateTime <- seq(1:191)
 
-p1<- ggplot() + geom_line(data = clarksburg_extreme_109%>%filter(dateTime>40), aes(x = dateTime, y = stores_remain, group = bmp_name), color = "grey")+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-109")+theme(legend.position = "none") + geom_line(data = precip_clarksburg_extreme_event%>%filter(dateTime>40), aes(y = rain*2000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*2000000), limits = c(-500000, 200000)) + theme(plot.title = element_text(size=10))+ theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+p1<- ggplot() + geom_line(data = clarksburg_extreme_109%>%filter(dateTime>40), aes(x = dateTime, y = stores_remain/1000, group = bmp_name), color = "black")+ theme_economist() +labs(x = "", y = "Storage Remaining (Thousands of Cubic Feet)", title = "Sub Catchment TR-109")+theme(legend.position = "none") + theme(plot.title = element_text(size=10))+ theme(axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.title.y = element_text(size = 10))+theme(axis.title.y = element_text(vjust=3))
 
 
-p2<- ggplot() + geom_line(data = clarksburg_extreme_104%>%filter(dateTime>40), aes(x = dateTime, y = stores_remain, group = bmp_name), color = "grey")+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-104")+theme(legend.position = "none") + geom_line(data = precip_clarksburg_extreme_event%>%filter(dateTime>40), aes(y = rain*2000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*2000000), limits = c(-500000, 200000)) + theme(plot.title = element_text(size=10)) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+p2<- ggplot() + geom_line(data = clarksburg_extreme_104%>%filter(dateTime>40), aes(x = dateTime, y = stores_remain/1000, group = bmp_name), color = "black")+ theme_economist() +labs(x = "", y = "Storage Remaining (Thousands of Cubic Feet)", title = "Sub Catchment TR-104")+theme(legend.position = "none") +  theme(plot.title = element_text(size=10)) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.title.y = element_text(size = 10))+theme(axis.title.y = element_text(vjust=3))
 
-plot <- plot_grid(p1, p2, ncol = 1)
+p3<- ggplot()+ geom_line(data = precip_clarksburg_extreme_event%>%filter(dateTime>40), aes(y = rain, x = dateTime ), size = 1, color = "darkblue") + theme_economist() + labs(y = "Rainfall (ft)", x = "")+ theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())+theme(axis.title.y = element_text(vjust=3))
+
+plot <- plot_grid(p1, p2, p3, ncol = 1, rel_heights = c(4,4,2))
 
 y.grob <- textGrob("Storage Remaining (Cubic Feet)", 
                    gp=gpar(fontface="bold", col="black", fontsize=12), rot=90)
 
-x.grob <- textGrob("Time ==>", 
+x.grob <- textGrob("Time " , 
                    gp=gpar(fontface="bold", col="black", fontsize=12))
+
 title.grob <- textGrob("BMP Storage Throughout an Extreme Rain Event in Clarksburg, MD", 
                    gp=gpar(fontface="bold", col="black", fontsize=14))
 second_x <- textGrob("Rainfall Scaled by 2000000 (ft)", 
@@ -658,7 +663,7 @@ second_x <- textGrob("Rainfall Scaled by 2000000 (ft)",
 
 #add to plot
 
-grid.arrange(arrangeGrob(plot, left = y.grob, bottom = x.grob, top = title.grob, right = second_x))
+grid.arrange(arrangeGrob(plot, top = title.grob, bottom = x.grob))
 
 ```
 
@@ -668,26 +673,30 @@ grid.arrange(arrangeGrob(plot, left = y.grob, bottom = x.grob, top = title.grob,
 ```{r}
 precip_clarksburg_typical_event$dateTime <- seq(1:191)
 
-p1<- ggplot() + geom_line(data = clarksburg_typical_109%>%filter(dateTime>120), aes(x = dateTime, y = stores_remain, group = bmp_name), color = "grey")+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-109")+theme(legend.position = "none") + geom_line(data = precip_clarksburg_typical_event%>%filter(dateTime>120), aes(y = rain*20000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*20000000), limits = c(-18000, 200000)) + theme(plot.title = element_text(size=10))+ theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+p1<- ggplot() + geom_line(data = clarksburg_typical_109%>%filter(dateTime>40), aes(x = dateTime, y = stores_remain/1000, group = bmp_name), color = "black")+ theme_economist() +labs(x = "", y = "Storage Remaining (Thousands of Cubic Feet)", title = "Sub Catchment TR-109")+theme(legend.position = "none") + theme(plot.title = element_text(size=10))+ theme(axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.title.y = element_text(size = 10))+theme(axis.title.y = element_text(vjust=3))
 
 
-p2<- ggplot() + geom_line(data = clarksburg_typical_104%>%filter(dateTime>120), aes(x = dateTime, y = stores_remain, group = bmp_name), color = "grey")+ theme_economist() +labs(x = "", y = "", title = "Sub Catchment TR-104")+theme(legend.position = "none") + geom_line(data = precip_clarksburg_typical_event%>%filter(dateTime>120), aes(y = rain*20000000, x = dateTime ), size = 1, color = "black") + scale_y_continuous(sec.axis = sec_axis(~.*20000000), limits = c(-18000, 200000)) + theme(plot.title = element_text(size=10)) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+p2<- ggplot() + geom_line(data = clarksburg_typical_104%>%filter(dateTime>40), aes(x = dateTime, y = stores_remain/1000, group = bmp_name), color = "black")+ theme_economist() +labs(x = "", y = "Storage Remaining (Thousands of Cubic Feet)", title = "Sub Catchment TR-104")+theme(legend.position = "none") +  theme(plot.title = element_text(size=10)) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank(), axis.title.y = element_text(size = 10))+theme(axis.title.y = element_text(vjust=3))
 
-plot <- plot_grid(p1, p2, ncol = 1)
+p3<- ggplot()+ geom_line(data = precip_clarksburg_typical_event%>%filter(dateTime>40), aes(y = rain, x = dateTime ), size = 1, color = "darkblue") + theme_economist() + labs(y = "Rainfall (ft)", x = "")+ theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())+theme(axis.title.y = element_text(vjust=3))
+
+plot <- plot_grid(p1, p2, p3, ncol = 1, rel_heights = c(4,4,2))
 
 y.grob <- textGrob("Storage Remaining (Cubic Feet)", 
                    gp=gpar(fontface="bold", col="black", fontsize=12), rot=90)
 
-x.grob <- textGrob("Time ==>", 
+x.grob <- textGrob("Time " , 
                    gp=gpar(fontface="bold", col="black", fontsize=12))
+
 title.grob <- textGrob("BMP Storage Throughout a Typical Rain Event in Clarksburg, MD", 
                    gp=gpar(fontface="bold", col="black", fontsize=14))
-second_x <- textGrob("Rainfall Scaled by 20000000 (ft)", 
+second_x <- textGrob("Rainfall Scaled by 2000000 (ft)", 
                    gp=gpar(fontface="bold", col="black", fontsize=12), rot=270)
 
 #add to plot
 
-grid.arrange(arrangeGrob(plot, left = y.grob, bottom = x.grob, top = title.grob, right = second_x))
+grid.arrange(arrangeGrob(plot, top = title.grob, bottom = x.grob))
+
 
 ```
 
@@ -962,8 +971,9 @@ all_senarios_results <- rbind(clarksburg_extreme_104, clarksburg_extreme_109, cl
 
 write.csv(all_senarios_results, file = "./Output_for_Files/all_senario_results.csv")
 
+all_senarios_results <- read.csv(file = "./Output_for_Files/all_senario_results.csv")
 
-all_senarios_results <- all_senario_results %>%
+all_senarios_results <- all_senarios_results %>%
   dplyr::mutate(stores_remain_no_neg = ifelse(stores_remain>0, stores_remain, 0))
 
 all_senarios_results <- all_senarios_results %>%
@@ -977,7 +987,7 @@ all_senarios_results_summary <- all_senarios_results %>%
   group_by(rainfall_senario, dateTime, site)%>%
   dplyr::summarise(cumulative_storage_available = sum(stores_remain_no_neg))
 
-ggplot(all_senarios_results_summary, aes(x = dateTime, y = cumulative_storage_available, color = rainfall_senario, linetype = rainfall_senario)) + geom_line(size = 1.2) + facet_wrap("site") + scale_color_economist() +theme_economist() + labs(x = "", y = "Total Storage Available", color = "Rainfall Scenario", linetype = "Rainfall Scenario") + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())+theme(legend.position = "right", legend.text = element_text(size=10))+ theme(axis.title.y = element_text(vjust=3)) 
+ggplot(all_senarios_results_summary, aes(x = dateTime, y = cumulative_storage_available/1000, color = rainfall_senario, linetype = rainfall_senario)) + geom_line(size = 1.2) + facet_wrap("site") + scale_color_economist() +theme_economist() + labs(x = "", y = "Total Storage Available (thousands of cubic ft)", color = "Rainfall Scenario", linetype = "Rainfall Scenario") + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())+theme(legend.position = "right", legend.text = element_text(size=10))+ theme(axis.title.y = element_text(vjust=3)) 
 
 all_senarios_results_summary_2 <- all_senarios_results_summary%>%
   group_by(rainfall_senario, site)%>%
@@ -1000,6 +1010,89 @@ z.test(tr_104_typical, tr_109_typical, paired = TRUE, alternative = "two.sided")
 d <- tr_104_typical-tr_109_typical
 # Shapiro-Wilk normality test for the differences
 shapiro.test(d) 
+
+```
+
+```{r}
+
+all_senario_modeled_results <- read.csv(file = "./Output_for_Files/all_senario_results.csv")
+
+all_senarios_tr104 <- all_senario_modeled_results %>%
+  filter(site == "TR-104")
+
+all_senarios_tr109 <- all_senario_modeled_results %>%
+  filter(site == "TR-109")
+
+tr104_bmp_deliniated <- st_read(file.path("./Input_Files/deliniate_tr104.shp"))
+tr104_bmp_deliniated <- st_transform(tr104_bmp_deliniated, 2248)
+tr109_bmp_deliniated <-st_read(file.path("./Input_Files/deliniate_tr109.shp"))
+tr109_bmp_deliniated <- st_transform(tr109_bmp_deliniated, 2248)
+
+stormwater_tr109 <- st_read(file.path("./Input_Files/stormwater_tr109.shp"))
+stormwater_tr109 <- st_transform(stormwater_tr109, 2248) 
+stormwater_tr104 <- st_read(file.path("./Input_Files/stormwater_tr104.shp")) 
+stormwater_tr104 <- st_transform(stormwater_tr104, 2248)
+stormwater_tr104 <- stormwater_tr104[,c(1:32,107)]
+stormwater_tr104 <- as.data.frame(stormwater_tr104)[,1:32]
+stormwater_tr109 <- as.data.frame(stormwater_tr109)[,1:32]
+
+tr104 <- cbind(stormwater_tr104, tr104_bmp_deliniated)
+tr104 <- tr104 %>%
+  mutate(bmp_name = ASSET)
+
+tr109 <- cbind(stormwater_tr109, tr109_bmp_deliniated)
+tr109 <- tr109 %>%
+  mutate(bmp_name = ASSET)
+
+all_senarios_tr104 <- left_join(all_senarios_tr104, tr104, by = "bmp_name")
+
+all_senarios_tr109 <- left_join(all_senarios_tr109, tr109, by = "bmp_name")
+
+ggplot(data = st_as_sf(all_senarios_tr104%>%filter(dateTime == max(dateTime))))+ geom_sf(aes(fill = stores_remain_no_neg))+facet_wrap("rainfall_senario", ncol = 2) + scale_fill_gradient(low = "red", high = "green")+ theme(axis.text.x = element_text(size = 8, angle = 90, vjust = 0.5, hjust=1)) + labs(fill = "Storage Remaining at the End of Senario")
+
+
+ggplot(data = st_as_sf(all_senarios_tr109%>%filter(dateTime == max(dateTime))))+ geom_sf(aes(fill = stores_remain_no_neg))+facet_wrap("rainfall_senario", ncol = 2) + scale_fill_gradient(low = "red", high = "green") + theme(axis.text.x = element_text(size = 8, angle = 90, vjust = 0.5, hjust=1)) + labs(fill = "Storage Remaining at the End of Senario")
+
+ggplot(data = st_as_sf(all_senarios_tr109%>%filter(dateTime == max(dateTime)& rainfall_senario %in% c("Clarksburg Extreme", "Clarksburg Typical"))))+ geom_jitter(aes(x = drainage_area, y = stores_remain_no_neg, fill = rainfall_senario),pch=21, size = 3, width = 5000, alpha = 0.5) + labs(y =expression(paste("Storage Remaining at the End of Senario  ", (ft^3))), x = expression(paste("BMP Drainage Area ", (ft^2))), color = "", fill = "", title = "TR-109") + theme_economist() +  theme(axis.title.y = element_text(vjust=4))+ theme(axis.title.x  = element_text(vjust=-2))
+
+
+ggplot(data = st_as_sf(all_senarios_tr104%>%filter(dateTime == max(dateTime)& rainfall_senario %in% c("Clarksburg Extreme", "Clarksburg Typical"))))+ geom_jitter(aes(x = drainage_area, y = stores_remain_no_neg, fill = rainfall_senario),pch=21, size = 3, width = 5000, alpha = 0.5) + labs(y =expression(paste("Storage Remaining at the End of Senario  ", (ft^3))), x = expression(paste("BMP Drainage Area ", (ft^2))), color = "", fill = "", title = "TR-104") + theme_economist() +  theme(axis.title.y = element_text(vjust=4))+ theme(axis.title.x  = element_text(vjust=-2))
+
+ggplot(data = st_as_sf(all_senarios_tr104%>%filter(dateTime == max(dateTime)& rainfall_senario %in% c("Clarksburg Extreme", "Clarksburg Typical"))))+ geom_point(aes(x = drainage_area, y = stores_remain_no_neg, fill = rainfall_senario),pch=21, size = 3, width = 5000, alpha = 0.5) + labs(y =expression(paste("Storage Remaining at the End of Senario  ", (ft^3))), x = expression(paste("BMP Drainage Area ", (ft^2))), color = "", fill = "", title = "TR-104") + theme_economist() +  theme(axis.title.y = element_text(vjust=4))+ theme(axis.title.x  = element_text(vjust=-2))
+
+max_storage_tr104 <- all_senarios_tr104%>%filter(dateTime == min(dateTime))
+min_storage_tr104 <- all_senarios_tr104%>%filter(dateTime == max(dateTime))
+
+comparing_storage <- as.data.frame(max_storage_tr104)
+
+comparing_storage$start_storage <- max_storage_tr104$stores_remain
+comparing_storage$end_storage <- min_storage_tr104$stores_remain_no_neg
+comparing_storage$drainage_area <- max_storage_tr104$drainage_area
+
+comparing_storage <- comparing_storage %>%
+  dplyr::select(c(start_storage, end_storage,drainage_area, rainfall_senario))
+
+options(scipen=999)
+
+ggplot(comparing_storage, aes(x = drainage_area/1000, y = start_storage/1000, color = end_storage/1000))+geom_point()+facet_wrap("rainfall_senario")+ scale_color_gradient(low = "red", high = "green") + labs(x = "BMP Drainage Area (thousands of square ft)", y = "BMP Storage Available (thousands of cubic ft)", color = "Storage at the End of Rainfall Senario (thousands of cubic ft)", title = "TR-104")+ theme_economist(dkpanel = T)+theme(axis.title.y = element_text(vjust=4))+ theme(axis.title.x  = element_text(vjust=-2), legend.text = element_text(size = 6))
+
+
+
+max_storage_tr109 <- all_senarios_tr109%>%filter(dateTime == min(dateTime))
+min_storage_tr109 <- all_senarios_tr109%>%filter(dateTime == max(dateTime))
+
+comparing_storage_109 <- as.data.frame(max_storage_tr109)
+
+comparing_storage_109$start_storage <- max_storage_tr109$stores_remain
+comparing_storage_109$end_storage <- min_storage_tr109$stores_remain_no_neg
+comparing_storage_109$drainage_area <- max_storage_tr109$drainage_area
+
+comparing_storage_109 <- comparing_storage_109 %>%
+  dplyr::select(c(start_storage, end_storage,drainage_area, rainfall_senario))
+
+options(scipen=999)
+
+ggplot(comparing_storage_109, aes(x = drainage_area/1000, y = start_storage/1000, color = end_storage/1000))+geom_point()+facet_wrap("rainfall_senario")+ scale_color_gradient(low = "red", high = "green") + labs(x = "BMP Drainage Area (thousands of square ft)", y = "BMP Storage Available (thousands of cubic ft)", color = "Storage at the End of Rainfall Senario (thousands of cubic ft)", title = "TR-109")+ theme_economist(dkpanel = T)+theme(axis.title.y = element_text(vjust=4))+ theme(axis.title.x  = element_text(vjust=-2), legend.text = element_text(size = 6), axis.text.x=element_text(size=8))
 
 ```
 

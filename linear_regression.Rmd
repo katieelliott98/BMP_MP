@@ -1,0 +1,164 @@
+---
+title: "Linear Regression Test"
+author: "Kaitlyn Elliott"
+date: "2023-04-20"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+# Library and Reading In Files
+
+```{r}
+
+library(tidyverse)
+
+
+SEM_PRECIP_2022 <- read.csv("Input_Files/SEM_PRECIP_2022.CSV")
+
+all_bmp_type_yearly_summary <- read.csv("Output_for_Files/all_bmp_type_yearly_summary.csv")
+
+infiltration_bmp_type_yearly_summary <- read.csv("Output_for_Files/infiltration_bmp_type_yearly_summary.csv")
+
+filtration_bmp_type_yearly_summary <- read.csv("Output_for_Files/filtration_bmp_type_yearly_summary.csv")
+
+full_storageTR104 <- read.csv("Output_for_Files/full_storageTR104.csv")
+
+full_storageTR109 <- read.csv("Output_for_Files/full_storageTR109.csv")
+
+```
+
+# All BMP Types TR-104
+
+```{r}
+
+all_bmp_type_tr104 <- all_bmp_type_yearly_summary %>%
+  filter(site == "tr104") %>%
+  mutate(Site = toupper(site), Year = year)
+
+tr104_all_type_sem <- left_join(all_bmp_type_tr104, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+lm_tr104 <- lm(IBI~untreated_30, tr104_all_type_sem)
+
+summary(lm_tr104)
+
+
+```
+
+
+# All BMP Types tr-109
+
+```{r}
+
+all_bmp_type_tr109 <- all_bmp_type_yearly_summary %>%
+  filter(site == "tr109") %>%
+  mutate(Site = toupper(site), Year = year)
+
+tr109_all_type_sem <- left_join(all_bmp_type_tr109, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+lm_tr109 <- lm(IBI~untreated_30, tr109_all_type_sem)
+
+summary(lm_tr109)
+
+
+```
+
+# Infiltrative BMP Types TR-104
+
+```{r}
+
+infiltrative_bmp_type_tr104 <- infiltration_bmp_type_yearly_summary %>%
+  filter(site == "tr104") %>%
+  mutate(Site = toupper(site), Year = year)
+
+tr104_infiltrative_type_sem <- left_join(infiltrative_bmp_type_tr104, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+lm_tr104_infil <- lm(IBI~untreated_30, tr104_infiltrative_type_sem)
+
+summary(lm_tr104_infil)
+
+
+```
+
+
+# Infiltrative BMP Types TR-109
+
+```{r}
+
+infiltrative_bmp_type_tr109 <- infiltration_bmp_type_yearly_summary %>%
+  filter(site == "tr109") %>%
+  mutate(Site = toupper(site), Year = year)
+
+tr109_infiltrative_type_sem <- left_join(infiltrative_bmp_type_tr109, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+lm_tr109_infil <- lm(IBI~untreated_30, tr109_infiltrative_type_sem)
+
+summary(lm_tr109_infil)
+
+
+```
+
+
+# Filtration BMP Types TR-104
+
+```{r}
+
+filtrative_bmp_type_tr104 <- filtration_bmp_type_yearly_summary %>%
+  filter(site == "tr104") %>%
+  mutate(Site = toupper(site), Year = year)
+
+tr104_filtrative_type_sem <- left_join(filtrative_bmp_type_tr104, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+lm_tr104_fil <- lm(IBI~untreated_30, tr104_filtrative_type_sem)
+
+summary(lm_tr104_fil)
+
+
+```
+
+
+# Filtration BMP Types TR-109
+
+```{r}
+
+filtrative_bmp_type_tr109 <- filtration_bmp_type_yearly_summary %>%
+  filter(site == "tr109") %>%
+  mutate(Site = toupper(site), Year = year)
+
+tr109_filtrative_type_sem <- left_join(filtrative_bmp_type_tr109, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+lm_tr109_fil <- lm(IBI~untreated_30, tr109_filtrative_type_sem)
+
+summary(lm_tr109_fil)
+
+
+```
+
+# Storage TR-104
+
+```{r}
+storage_104 <- full_storageTR104 %>%
+  mutate(Year = year)
+
+tr104_storage_sem <- left_join(storage_104, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+lm_tr104_storage <- lm(Flash~total_storage, tr104_storage_sem)
+
+summary(lm_tr104_storage)
+
+```
+
+
+# Storage TR-109
+
+```{r}
+storage_109 <- full_storageTR109 %>%
+  mutate(Year = year)
+
+tr109_storage_sem <- left_join(storage_109, SEM_PRECIP_2022, by = c("Year", "Site"))
+
+lm_tr109_storage <- lm(IBI~total_storage, tr109_storage_sem)
+
+summary(lm_tr109_storage)
+
+```

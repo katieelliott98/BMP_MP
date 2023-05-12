@@ -438,3 +438,65 @@ ggplot(full_storage_sem_pre_post, aes(y = Flash, color = Site, x = pre_post_cons
      stat_summary(fun.data = give.n, geom = "text",position = position_dodge(width = 0.75)) + theme_economist() + labs(x = "", y = "Stream Flashiness Index")+ theme(axis.title.y = element_text(vjust=2.5))
 
 ```
+
+# Trends in LULC Overtime
+
+```{r}
+library(lubridate)
+
+options(scipen=99)
+
+all_bmp_type_yearly_summary <- read_csv("Output_for_Files/all_bmp_type_yearly_summary.csv")
+
+all_bmp_type_yearly_summary_longer <- pivot_longer(all_bmp_type_yearly_summary, cols = c(total_basin_20, total_basin_30, total_basin_40, total_basin_70), names_to = "landcover_type", values_to = "lulc_area")
+
+all_bmp_type_yearly_summary_longer <- all_bmp_type_yearly_summary_longer %>%
+  mutate(site_name = case_when(site == "cb"~"Cabin Branch", 
+                               site == "cr"~"Crystal Rock", 
+                               site == "sb"~ "Soper Branch", 
+                               site == "tr104"~"TR-104", 
+                               site == "tr109"~"TR-109"),
+         landcover_type_names = case_when(landcover_type == "total_basin_20"~"Impervious", 
+                                          landcover_type == "total_basin_30"~"Barren",
+                                          landcover_type == "total_basin_70"~"Grass",
+                                          landcover_type == "total_basin_40"~"Forested"))
+
+ggplot(all_bmp_type_yearly_summary_longer, aes(x = year, y = lulc_area/1000, fill = landcover_type_names)) +  geom_point(pch=21, size = 3)+ facet_wrap("site_name") + labs(x = "", y = expression(paste("Area (thousands of  ",ft ^2, ")")), fill = "") + scale_fill_manual(values = c("darkorange", "darkgreen", "darkseagreen", "red")) + theme_economist(dkpanel = TRUE) + theme(axis.title.y = element_text(vjust=4)) + geom_line() + scale_x_continuous(breaks = round(seq(min(all_bmp_type_yearly_summary_longer$year), max(all_bmp_type_yearly_summary_longer$year), by = 1),1))
+  
+SEM_PRECIP_2022 <- read.csv("Input_Files/SEM_PRECIP_2022.CSV")
+
+SEM_PRECIP_2022 <- SEM_PRECIP_2022[,c(2:11, 27:38, 41:46, 49:55)]%>%
+  mutate(DISOXY = as.numeric(DISOXY), PH = as.numeric(PH), CONDUCT = as.numeric(CONDUCT), AIRTEMP = as.numeric(AIRTEMP), H2OTEMP_C = as.numeric(H2OTEMP_C))%>%
+  dplyr::select(-c(X._SAT))
+
+all_bmp_type_yearly_summary <- all_bmp_type_yearly_summary[,2:21]%>%
+  mutate(Site = toupper(site), Year = year)%>%
+  dplyr::select(-c(site, year))
+
+sem_bmp_summary_yearly<-full_join(all_bmp_type_yearly_summary,SEM_PRECIP_2022)
+
+sem_bmp_summary_yearly_sites_remove<-na.omit(sem_bmp_summary_yearly)%>%
+  dplyr::select(-c(Site))
+
+cor_for_plot_all_sites <- cor(sem_bmp_summary_yearly_sites_remove)
+ 
+corrplot(cor_for_plot_all_sites, method = "circle", type = "lower") 
+
+
+sem_bmp_summary_yearly_sites_remove_tr109<- na.omit(sem_bmp_summary_yearly)%>%
+  filter(Site == "TR109")%>%
+  dplyr::select(-c(Site, LB_BUFFER, storage))
+
+cor_for_plot_tr109 <- cor(sem_bmp_summary_yearly_sites_remove_tr109)
+ 
+corrplot(cor_for_plot_tr109, method = "circle", type = "lower") 
+
+sem_bmp_summary_yearly_sites_remove_tr104<- na.omit(sem_bmp_summary_yearly)%>%
+  filter(Site == "TR104")%>%
+  dplyr::select(-c(Site, storage))
+
+cor_for_plot_tr104 <- cor(sem_bmp_summary_yearly_sites_remove_tr104)
+ 
+corrplot(cor_for_plot_tr104, method = "circle", type = "lower") 
+
+```
