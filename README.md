@@ -1,10 +1,13 @@
 # BMP_MP
 Repository containing code used for Kaitlyn Elliott's Masters Project - Duke University 
 
-Variable Definitions:
 
-lulc_# <- area of landcover # in ft^2 for bmp drainage areas
-total_area_# <- area of landcover # in whole basin in ft^2
-area_whole_basin <- area of whole basin in ft^2
-percent_of_all_# <- lulc_# / total_area_# * 100
-percent_#_whole_basin <- lulc_# / area_whole_basin * 100
+Link to publication: https://hdl.handle.net/10161/27217
+
+
+## Workflow
+Pulling_Rainfall_Data.Rmd -> ArcGIS Pro Model Builder (work described in paper) -> creating_datasets.Rmd -> testing_assumptions.Rmd -> modeling_bmp_storage.Rmd -> ArcGIS PRO Model Builder -> plotting_results/Newest_Plots.Rmd 
+
+## Input_Datasets
+
+## Variables Defined
