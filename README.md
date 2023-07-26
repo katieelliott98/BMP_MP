@@ -9,5 +9,17 @@ Link to publication: https://hdl.handle.net/10161/27217
 Pulling_Rainfall_Data.Rmd -> ArcGIS Pro Model Builder (work described in paper) -> creating_datasets.Rmd -> testing_assumptions.Rmd -> modeling_bmp_storage.Rmd -> ArcGIS PRO Model Builder -> plotting_results/Newest_Plots.Rmd 
 
 ## Input_Datasets
+To request input datasets send an email to katieelliott98@gmail.com
 
 ## Variables Defined
+
+Land Use: 
+20 = Impervious Cover 
+30 = Barren Cover 
+40 = Forested Cover
+70 = Grassland Cover
+
+Benthic Variables: 
+IBI = benthic index of biotic integrity 
+EPT = sensitive taxa, which included Ephemeroptera (mayflies), Plecoptera (stoneflies), and Tricoptera (caddisflies)
+Taxa richness = measure of the number of different taxa present
