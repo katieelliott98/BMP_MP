@@ -14,12 +14,12 @@ To request input datasets send an email to katieelliott98@gmail.com
 ## Variables Defined
 
 Land Use: 
-\n20 = Impervious Cover 
-\n30 = Barren Cover 
-\n40 = Forested Cover
-\n70 = Grassland Cover
+<br>20 = Impervious Cover 
+<br>30 = Barren Cover 
+<br>40 = Forested Cover
+<br>70 = Grassland Cover
 
 Benthic Variables: 
-\nIBI = benthic index of biotic integrity 
-\nEPT = sensitive taxa, which included Ephemeroptera (mayflies), Plecoptera (stoneflies), and Tricoptera (caddisflies)
-\nTaxa richness = measure of the number of different taxa present
+<br>IBI = benthic index of biotic integrity 
+<br>EPT = sensitive taxa, which included Ephemeroptera (mayflies), Plecoptera (stoneflies), and Tricoptera (caddisflies)
+<br>Taxa richness = measure of the number of different taxa present
